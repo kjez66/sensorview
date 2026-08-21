@@ -18,6 +18,7 @@ A cross-platform CLI tool for driving USB LCD displays as real-time system monit
 - **Regional USB updates** - Sends only changed rectangles when the panel protocol supports it
 - **Dynamic sensor config** - Enable/disable sensors and configure options at runtime
 - **Theme renderer selection** - Use Chrome-rendered web themes or low-overhead native JSON themes
+- **Local Management Studio** - Visually arrange sensors, charts, images, fonts, and cropped video backgrounds
 - **Web-based themes** - Create custom themes using React + TypeScript
 - **TypeScript SDK** - React hooks for easy theme development with hot reload
 - **Single-command dev** - One command starts everything for theme development
@@ -80,6 +81,9 @@ nix build
 # Force a renderer for the selected theme
 ./sensorpanel run --renderer native   # Native Go renderer, no Chrome
 ./sensorpanel run --renderer chrome   # Headless Chrome renderer
+
+# While the native dashboard is running, open its local visual editor
+./sensorpanel ui
 ```
 
 ### 4. (Optional) Install as autostart service
@@ -122,6 +126,12 @@ Flags:
   -o, --opt strings       Sensor options (e.g., disk.mounts=/,/home)
       --orientation int   Display orientation in degrees: 0, 90, 180, 270
       --renderer string   Theme renderer: auto, native, or chrome (default auto)
+      --target-fps float  Native animation target FPS (0 uses theme settings)
+      --jpeg-quality int  LY JPEG quality 1-100 (0 uses theme settings)
+      --jpeg-encoder      LY encoder: auto, stdlib, or turbo
+      --management        Serve the local Management Studio (default true)
+      --management-address string
+                          Studio address (localhost only; default 127.0.0.1:19848)
       --gif string        Play an animated GIF file or URL instead of sensor data
       --image string      Display a PNG, JPEG, or GIF file or URL instead of sensor data
       --music             Show now-playing music dashboard instead of sensor data
@@ -131,6 +141,34 @@ Renderer mode only applies to normal themed sensor dashboards. GIF, image, and
 music modes use their dedicated render paths. `auto` selects `native` when the
 selected theme has `native.theme.json`; otherwise it uses the existing Chrome
 renderer.
+
+### Management Studio
+
+Native themes can be created and edited without writing JSON. Start a native
+dashboard and open the embedded, localhost-only editor:
+
+```bash
+sensorpanel run --renderer native
+sensorpanel ui
+```
+
+The Studio provides a fixed-pixel free canvas, live sensor bindings, bars,
+gauges and history charts, static image/image-widget support, custom fonts,
+video or image crop/trim processing through FFmpeg, native PNG preview,
+undo/redo, layer controls, proportional canvas resizing, theme ZIP
+import/export, and controlled hot Apply. Draft edits do not affect the physical
+panel until **Apply to panel** is selected.
+
+Legacy Trofeo V1 themes are read-only in Studio. Cloning one creates a separate
+pixel-equivalent V2 copy with editable layers and copied assets, leaving the
+known-good V1 definition untouched. **Native preview** is authoritative when
+the interactive browser canvas differs due to browser font rasterization.
+
+Uploaded media stays inside the selected theme. Videos are cropped and
+pre-rendered to exact panel-sized JPEG frames; FFmpeg runs as one low-priority,
+two-thread job to avoid disrupting the desktop. The server accepts only
+localhost addresses and mutation requests require the browser session token.
+See [Management Studio](docs/management-studio.md) for the full workflow.
 
 The music dashboard currently supports Linux MPRIS players such as Spotify,
 VLC, and compatible browser players. It requires `playerctl`. Synchronized
@@ -183,6 +221,7 @@ sensorpanel theme sdk update [name] # Update SDK in existing theme
 sensorpanel theme browser install   # Download Chrome for Testing
 sensorpanel theme browser status    # Check browser availability
 sensorpanel theme browser remove    # Remove cached browser
+sensorpanel ui                      # Open the running native Management Studio
 ```
 
 ### Panel Control
@@ -305,6 +344,10 @@ value or the minute changes, while its cached pixels are resent once per second
 to prevent the panel firmware from restoring the Thermalright splash screen.
 One epoll watcher reads meaningful keyboard/mouse events and falls back to the
 active cadence when the user cannot read `/dev/input`.
+
+Static native scenes are automatically capped to the sensor sampling cadence.
+They are not repeatedly rendered at animation FPS when their pixels have not
+changed.
 
 Sensor collection is also adaptive. CPU/GPU/network values update once per
 second while active and every five seconds while idle; disk, motherboard, and

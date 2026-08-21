@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"math"
@@ -21,6 +22,9 @@ import (
 	"github.com/oae/sensorpanel/pkg/jpegcodec"
 	apppaths "github.com/oae/sensorpanel/pkg/paths"
 	bitmap "github.com/oae/sensorpanel/pkg/renderer"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
+	_ "golang.org/x/image/webp"
 )
 
 // Renderer renders a native theme to RGBA.
@@ -56,6 +60,13 @@ type Renderer struct {
 	backgroundPrefetch int
 	backgroundMu       sync.RWMutex
 	prefetchRequests   chan int
+
+	assetImages   map[string]*image.RGBA
+	assetFonts    map[string]*opentype.Font
+	fontFaces     map[string]font.Face
+	sortedWidgets []Widget
+	history       map[string][]historyPoint
+	v2Monochrome  bool
 }
 
 // New creates a native renderer for the target logical display size.
@@ -74,6 +85,10 @@ func New(theme *Theme, width, height int) *Renderer {
 		muted:        parseColor(theme.Muted),
 		panel:        parseColor(theme.Panel),
 		panelLine:    parseColor(theme.PanelLine),
+		assetImages:  make(map[string]*image.RGBA),
+		assetFonts:   make(map[string]*opentype.Font),
+		fontFaces:    make(map[string]font.Face),
+		history:      make(map[string][]historyPoint),
 	}
 	if theme.BackgroundSequence != nil {
 		r.backgroundFPS = theme.BackgroundSequence.FPS
@@ -287,12 +302,18 @@ func (r *Renderer) Close() error {
 		close(r.prefetchRequests)
 		r.prefetchRequests = nil
 	}
+	var closeErr error
 	if r.backgroundDecoder != nil {
-		err := r.backgroundDecoder.Close()
+		closeErr = r.backgroundDecoder.Close()
 		r.backgroundDecoder = nil
-		return err
 	}
-	return nil
+	for _, face := range r.fontFaces {
+		if closer, ok := face.(interface{ Close() error }); ok {
+			_ = closer.Close()
+		}
+	}
+	clear(r.fontFaces)
+	return closeErr
 }
 
 // BackgroundDecoder returns the effective decoder backend.
@@ -326,6 +347,7 @@ func (r *Renderer) RenderBackgroundInto(img *image.RGBA, now time.Time) {
 	}
 	if len(r.backgroundPaths) == 0 || r.backgroundFPS <= 0 {
 		draw.Draw(img, img.Bounds(), &image.Uniform{r.bg}, image.Point{}, draw.Src)
+		r.drawV2CanvasBackground(img)
 		return
 	}
 	r.drawBackgroundSequence(img, now)
@@ -358,6 +380,8 @@ func (r *Renderer) RenderOverlayInto(img *image.RGBA, data map[string]interface{
 	switch r.theme.Layout {
 	case "trofeo_vertical_v1":
 		r.drawTrofeoVertical(img, data, now)
+	case "freeform_v2":
+		r.drawV2(img, data, now)
 	default:
 		r.textAt(img, 24, 24, 3, "Unsupported native layout", r.text)
 		r.textAt(img, 24, 58, 2, r.theme.Layout, r.muted)
@@ -397,20 +421,27 @@ func (r *Renderer) renderLowPowerLogical(img *image.RGBA, data map[string]interf
 	r.muted = color.RGBA{0x91, 0x91, 0x91, 0xff}
 	r.panel = color.RGBA{0x08, 0x08, 0x08, 0xd8}
 	r.panelLine = color.RGBA{0x58, 0x58, 0x58, 0x88}
+	r.v2Monochrome = true
 	switch r.theme.Layout {
 	case "trofeo_vertical_v1":
 		r.drawTrofeoVertical(img, data, now)
+	case "freeform_v2":
+		r.drawV2(img, data, now)
 	default:
 		r.textAt(img, 24, 24, 3, "Unsupported native layout", r.text)
 	}
 	r.accent, r.accent2, r.accent3, r.text, r.muted, r.panel, r.panelLine =
 		accent, accent2, accent3, text, muted, panel, panelLine
+	r.v2Monochrome = false
 }
 
 // ViewSignature contains exactly the values rendered by the Trofeo layout,
 // rounded to their displayed precision. It lets idle mode skip unchanged
 // frames even when raw sensor readings jitter.
 func (r *Renderer) ViewSignature(data map[string]interface{}, now time.Time) string {
+	if r.theme.Layout == "freeform_v2" {
+		return r.viewSignatureV2(data, now)
+	}
 	cpu := nested(data, "cpu")
 	board := nested(data, "motherboard")
 	gpu := nested(data, "nvidia_gpu")

@@ -59,15 +59,27 @@ type Config struct {
 	ProfileID string `json:"profile_id,omitempty"`
 
 	// Display settings
-	Brightness int `json:"brightness,omitempty"` // 0-7, default 7
+	Brightness  int `json:"brightness,omitempty"`  // 0-7, default 7
+	Orientation int `json:"orientation,omitempty"` // 0, 90, 180, or 270
 
 	// Theme settings
 	Theme    string `json:"theme,omitempty"`    // Active theme name (empty = use built-in renderer)
 	Renderer string `json:"renderer,omitempty"` // auto, native, or chrome
 
 	// Sensor settings
-	UpdateInterval float64                `json:"update_interval,omitempty"` // seconds
-	SensorOptions  map[string]interface{} `json:"sensor_options,omitempty"`  // Provider-specific options (e.g., "disk.mounts": ["/", "/home"])
+	UpdateInterval  float64                `json:"update_interval,omitempty"` // seconds
+	EnabledSensors  []string               `json:"enabled_sensors,omitempty"`
+	DisabledSensors []string               `json:"disabled_sensors,omitempty"`
+	SensorOptions   map[string]interface{} `json:"sensor_options,omitempty"` // Provider-specific options (e.g., "disk.mounts": ["/", "/home"])
+
+	// Embedded local management studio.
+	Management *ManagementConfig `json:"management,omitempty"`
+}
+
+// ManagementConfig controls the local management web application.
+type ManagementConfig struct {
+	Enabled bool   `json:"enabled"`
+	Address string `json:"address"`
 }
 
 // DefaultConfig returns a config with sensible defaults.
@@ -76,9 +88,14 @@ func DefaultConfig() *Config {
 	return &Config{
 		// Device is intentionally empty - must be configured via 'device select'
 		Brightness:     7,
+		Orientation:    0,
 		Renderer:       RendererAuto,
 		UpdateInterval: 1.0,
 		SensorOptions:  nil, // Let sensor providers use their defaults
+		Management: &ManagementConfig{
+			Enabled: true,
+			Address: "127.0.0.1:19848",
+		},
 	}
 }
 
@@ -128,6 +145,12 @@ func Load() (*Config, error) {
 	cfg := DefaultConfig()
 	if err := json.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+	if cfg.Management == nil {
+		cfg.Management = &ManagementConfig{Enabled: true, Address: "127.0.0.1:19848"}
+	}
+	if cfg.Management.Address == "" {
+		cfg.Management.Address = "127.0.0.1:19848"
 	}
 
 	return cfg, nil

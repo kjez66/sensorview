@@ -2,6 +2,15 @@
 /sensorpanel
 *.exe
 
+# JavaScript build cache
+node_modules/
+*.tsbuildinfo
+
+# Local Studio processing workspace for the repository-owned Caelestia theme.
+# The committed theme references assets/wallpaper.jpg directly.
+themes/caelestia/assets/source/
+themes/caelestia/assets/generated/
+
 # IDE
 .idea/
 .vscode/

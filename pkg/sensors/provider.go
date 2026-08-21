@@ -2,6 +2,7 @@
 package sensors
 
 import (
+	"encoding/json"
 	"reflect"
 	"sync"
 	"time"
@@ -275,6 +276,25 @@ func NewCollector(config *Config) *Collector {
 	return c
 }
 
+// Reconfigure updates enabled providers and provider-specific options while
+// retaining the same Collector pointer used by the renderer and management API.
+func (c *Collector) Reconfigure(config *Config) {
+	if config == nil {
+		config = DefaultConfig()
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.config = config
+	c.available = nil
+	c.lastDiscovery = time.Time{}
+	c.lastCollected = make(map[string]time.Time)
+	for _, provider := range c.registry.All() {
+		if configurable, ok := provider.(Configurable); ok {
+			configurable.Configure(config)
+		}
+	}
+}
+
 // CollectAll gathers data from all available sensors.
 func (c *Collector) CollectAll() map[string]interface{} {
 	c.mu.Lock()
@@ -290,6 +310,23 @@ func (c *Collector) CollectScheduled(now time.Time, idle bool) (map[string]inter
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.collectLocked(now, idle, false)
+}
+
+// Snapshot returns a detached copy of the latest complete sensor snapshot
+// without triggering provider I/O. It is intended for previews and management
+// clients that must not alter the renderer's collection cadence.
+func (c *Collector) Snapshot() map[string]interface{} {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	encoded, err := json.Marshal(c.snapshot)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(encoded, &result); err != nil {
+		return map[string]interface{}{}
+	}
+	return result
 }
 
 func (c *Collector) collectLocked(now time.Time, idle, force bool) (map[string]interface{}, bool) {

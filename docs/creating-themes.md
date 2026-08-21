@@ -63,22 +63,48 @@ CSS/React flexibility for predictable rendering cost and fewer moving parts.
 
 ### Native theme file
 
+The recommended way to build a native theme is `sensorpanel ui`. The Studio
+writes schema V2 and uses the same Go renderer for its **Native preview** and
+the physical panel. The JSON remains portable and hand-editable.
+
 Add `native.theme.json` to the theme directory:
 
 ```json
 {
-  "name": "Trofeo Native",
-  "layout": "trofeo_vertical_v1",
-  "width": 462,
-  "height": 1920,
+  "schema_version": 2,
+  "name": "my-native-theme",
+  "layout": "freeform_v2",
   "background": "#000000",
   "accent": "#2de2ff",
-  "accent2": "#ff4df3",
-  "accent3": "#71ffa8",
-  "text": "#f8fbff",
-  "muted": "#8ea1bb",
-  "panel": "#061326cc",
-  "panel_line": "#245cff99",
+  "canvas": {
+    "width": 462,
+    "height": 1920,
+    "background": "wallpaper"
+  },
+  "assets": {
+    "wallpaper": {"type": "image", "path": "assets/wallpaper.jpg"},
+    "display-font": {"type": "font", "path": "assets/display.ttf"}
+  },
+  "widgets": [
+    {
+      "id": "cpu-value",
+      "type": "value",
+      "rect": {"x": 24, "y": 100, "width": 180, "height": 64},
+      "binding": {
+        "provider": "cpu",
+        "field": "usage_percent",
+        "min": 0,
+        "max": 100,
+        "clamp": true,
+        "format": "%.0f%%"
+      },
+      "style": {
+        "color": "#f8fbff",
+        "font_size": 44,
+        "font": "display-font"
+      }
+    }
+  ],
   "performance": {
     "profile": "balanced",
     "target_fps": 8,
@@ -91,6 +117,16 @@ Add `native.theme.json` to the theme directory:
   }
 }
 ```
+
+Schema V2 widget types are `text`, `value`, `clock`, `bar`, `gauge`, `line`,
+`area`, `sparkline`, `panel`, and `image`. Every widget has an exact pixel
+rectangle and may specify `z_index`, `rotation` (0/90/180/270), `opacity`,
+`visible`, and `locked`. Numeric bindings support provider/field selection,
+fallback bindings, best-item or explicit array item selection, dynamic maximum
+bindings, scale, offset, min/max clamping, printf-style formatting, and native
+formatters for clock, RPM, VRAM, and transfer-rate values. Text widgets can
+combine named `bindings` in templates such as `{used} / {total} GB`. Charts
+keep bounded history in RAM and can use `series` for multiple bindings.
 
 `performance.profile` accepts `power-saver` (6 FPS), `balanced` (8 FPS), or
 `smooth` (12 FPS). `target_fps`, `jpeg_quality`, and `prefetch_frames` override
@@ -114,9 +150,12 @@ only when formatted on-screen values change. It resends the cached pixels at
 the configured cadence (1 FPS in the Trofeo theme) so the panel firmware does
 not restore its splash screen.
 
-Current native renderer support is intentionally small: it supports the
-Trofeo-oriented `trofeo_vertical_v1` dashboard layout and theme colors. Existing
-React themes continue to work through `--renderer chrome`.
+The original `trofeo_vertical_v1` layout remains supported. Studio exposes an
+exact in-memory V2 representation for inspection, but treats the installed V1
+definition as read-only. Use **Clone active theme** to create a separate V2
+copy with all assets and 75 editable layers. Applying directly over a V1 theme
+is rejected, so the known-good source cannot be accidentally replaced.
+Existing React themes continue to work through `--renderer chrome`.
 
 ## Using the SDK
 

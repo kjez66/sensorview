@@ -1,0 +1,491 @@
+{
+  "schema_version": 2,
+  "name": "caelestia",
+  "layout": "freeform_v2",
+  "width": 462,
+  "height": 1920,
+  "background": "#0a0f0f",
+  "accent": "#9bd0cc",
+  "accent2": "#b0ccc9",
+  "accent3": "#d5efff",
+  "text": "#dce8e6",
+  "muted": "#a2adac",
+  "panel": "#131b1a",
+  "panel_line": "#3f4a49",
+  "canvas": {
+    "width": 462,
+    "height": 1920,
+    "background": "wallpaper"
+  },
+  "assets": {
+    "caelestia-font": {
+      "type": "font",
+      "path": "assets/GoogleSansFlex.ttf"
+    },
+    "wallpaper": {
+      "type": "image",
+      "path": "assets/wallpaper.jpg"
+    }
+  },
+  "performance": {
+    "profile": "power-saver",
+    "target_fps": 1,
+    "active_fps": 1,
+    "idle_fps": 1,
+    "idle_timeout_seconds": 20,
+    "jpeg_quality": 78,
+    "prefetch_frames": 1,
+    "jpeg_encoder": "auto"
+  },
+  "widgets": [
+    {
+      "id": "wallpaper-scrim",
+      "type": "panel",
+      "rect": {"x": 0, "y": 0, "width": 462, "height": 1920},
+      "style": {"background": "#0a0f0fcc"}
+    },
+    {
+      "id": "hero-card",
+      "type": "panel",
+      "rect": {"x": 18, "y": 18, "width": 426, "height": 300},
+      "style": {"background": "#255b58", "radius": 48}
+    },
+    {
+      "id": "hero-orb",
+      "type": "panel",
+      "rect": {"x": 318, "y": 42, "width": 102, "height": 102},
+      "style": {"background": "#9bd0cc", "radius": 51}
+    },
+    {
+      "id": "hero-orb-core",
+      "type": "panel",
+      "rect": {"x": 346, "y": 70, "width": 46, "height": 46},
+      "style": {"background": "#0d4845", "radius": 23}
+    },
+    {
+      "id": "brand",
+      "type": "text",
+      "rect": {"x": 42, "y": 44, "width": 250, "height": 28},
+      "text": "CAELESTIA",
+      "style": {"color": "#b8ede9", "font_size": 18, "font": "caelestia-font"}
+    },
+    {
+      "id": "clock",
+      "type": "clock",
+      "rect": {"x": 40, "y": 84, "width": 280, "height": 92},
+      "text": "15:04",
+      "style": {"color": "#b8ede9", "font_size": 76, "font": "caelestia-font"}
+    },
+    {
+      "id": "date",
+      "type": "clock",
+      "rect": {"x": 44, "y": 184, "width": 360, "height": 34},
+      "text": "Monday, 2 January",
+      "style": {"color": "#b8ede9", "font_size": 22, "font": "caelestia-font"}
+    },
+    {
+      "id": "host-chip",
+      "type": "panel",
+      "rect": {"x": 42, "y": 246, "width": 168, "height": 44},
+      "style": {"background": "#0d4845", "radius": 22}
+    },
+    {
+      "id": "host",
+      "type": "text",
+      "rect": {"x": 60, "y": 257, "width": 132, "height": 24},
+      "binding": {"provider": "hostname", "field": "hostname", "uppercase": true, "max_length": 12},
+      "style": {"color": "#b8ede9", "font_size": 16, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "status-chip",
+      "type": "panel",
+      "rect": {"x": 224, "y": 246, "width": 194, "height": 44},
+      "style": {"background": "#27403e", "radius": 22}
+    },
+    {
+      "id": "status",
+      "type": "text",
+      "rect": {"x": 242, "y": 257, "width": 158, "height": 24},
+      "text": "LIVE SYSTEM",
+      "style": {"color": "#a9c5c2", "font_size": 16, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "overview-title",
+      "type": "text",
+      "rect": {"x": 28, "y": 344, "width": 300, "height": 30},
+      "text": "System overview",
+      "style": {"color": "#dce8e6", "font_size": 22, "font": "caelestia-font"}
+    },
+    {
+      "id": "cpu-card",
+      "type": "panel",
+      "rect": {"x": 18, "y": 386, "width": 205, "height": 350},
+      "style": {"background": "#131b1a", "border_color": "#3f4a49", "border_width": 1, "radius": 40}
+    },
+    {
+      "id": "gpu-card",
+      "type": "panel",
+      "rect": {"x": 239, "y": 386, "width": 205, "height": 350},
+      "style": {"background": "#192120", "border_color": "#3f4a49", "border_width": 1, "radius": 40}
+    },
+    {
+      "id": "cpu-label",
+      "type": "text",
+      "rect": {"x": 42, "y": 418, "width": 156, "height": 26},
+      "text": "CPU",
+      "style": {"color": "#9bd0cc", "font_size": 18, "font": "caelestia-font"}
+    },
+    {
+      "id": "cpu-load",
+      "type": "value",
+      "rect": {"x": 40, "y": 458, "width": 160, "height": 72},
+      "binding": {"provider": "cpu", "field": "load", "min": 0, "max": 100, "clamp": true, "format": "%.0f%%"},
+      "style": {"color": "#dce8e6", "font_size": 56, "font": "caelestia-font"}
+    },
+    {
+      "id": "cpu-temp",
+      "type": "value",
+      "rect": {"x": 42, "y": 534, "width": 156, "height": 30},
+      "binding": {"provider": "cpu", "field": "temperature", "format": "%.0f C"},
+      "style": {"color": "#a2adac", "font_size": 20, "font": "caelestia-font"}
+    },
+    {
+      "id": "cpu-bar",
+      "type": "bar",
+      "rect": {"x": 42, "y": 580, "width": 157, "height": 14},
+      "binding": {"provider": "cpu", "field": "load", "min": 0, "max": 100, "clamp": true},
+      "style": {"color": "#9bd0cc", "track_color": "#dce8e622", "radius": 7}
+    },
+    {
+      "id": "cpu-chart",
+      "type": "area",
+      "rect": {"x": 42, "y": 626, "width": 157, "height": 72},
+      "binding": {"provider": "cpu", "field": "load", "min": 0, "max": 100, "clamp": true},
+      "history_seconds": 90,
+      "style": {"color": "#9bd0cc"}
+    },
+    {
+      "id": "gpu-label",
+      "type": "text",
+      "rect": {"x": 263, "y": 418, "width": 156, "height": 26},
+      "text": "GPU",
+      "style": {"color": "#d5efff", "font_size": 18, "font": "caelestia-font"}
+    },
+    {
+      "id": "gpu-load",
+      "type": "value",
+      "rect": {"x": 261, "y": 458, "width": 160, "height": 72},
+      "binding": {
+        "provider": "nvidia_gpu", "field": "load", "min": 0, "max": 100, "clamp": true, "format": "%.0f%%",
+        "fallbacks": [{"provider": "amd_gpu", "field": "load"}]
+      },
+      "style": {"color": "#dce8e6", "font_size": 56, "font": "caelestia-font"}
+    },
+    {
+      "id": "gpu-temp",
+      "type": "value",
+      "rect": {"x": 263, "y": 534, "width": 156, "height": 30},
+      "binding": {
+        "provider": "nvidia_gpu", "field": "temperature", "format": "%.0f C",
+        "fallbacks": [{"provider": "amd_gpu", "field": "temperature"}]
+      },
+      "style": {"color": "#a2adac", "font_size": 20, "font": "caelestia-font"}
+    },
+    {
+      "id": "gpu-bar",
+      "type": "bar",
+      "rect": {"x": 263, "y": 580, "width": 157, "height": 14},
+      "binding": {
+        "provider": "nvidia_gpu", "field": "load", "min": 0, "max": 100, "clamp": true,
+        "fallbacks": [{"provider": "amd_gpu", "field": "load"}]
+      },
+      "style": {"color": "#d5efff", "track_color": "#dce8e622", "radius": 7}
+    },
+    {
+      "id": "gpu-chart",
+      "type": "area",
+      "rect": {"x": 263, "y": 626, "width": 157, "height": 72},
+      "binding": {
+        "provider": "nvidia_gpu", "field": "load", "min": 0, "max": 100, "clamp": true,
+        "fallbacks": [{"provider": "amd_gpu", "field": "load"}]
+      },
+      "history_seconds": 90,
+      "style": {"color": "#d5efff"}
+    },
+    {
+      "id": "memory-card",
+      "type": "panel",
+      "rect": {"x": 18, "y": 762, "width": 426, "height": 250},
+      "style": {"background": "#255b58", "radius": 44}
+    },
+    {
+      "id": "memory-label",
+      "type": "text",
+      "rect": {"x": 44, "y": 790, "width": 160, "height": 28},
+      "text": "Memory",
+      "style": {"color": "#b8ede9", "font_size": 20, "font": "caelestia-font"}
+    },
+    {
+      "id": "memory-percent",
+      "type": "value",
+      "rect": {"x": 42, "y": 830, "width": 180, "height": 72},
+      "binding": {"provider": "memory", "field": "percent", "min": 0, "max": 100, "clamp": true, "format": "%.0f%%"},
+      "style": {"color": "#b8ede9", "font_size": 60, "font": "caelestia-font"}
+    },
+    {
+      "id": "memory-usage",
+      "type": "text",
+      "rect": {"x": 224, "y": 844, "width": 194, "height": 50},
+      "text": "{used} / {total} GB",
+      "bindings": {
+        "used": {"provider": "memory", "field": "used", "scale": 0.0009765625, "format": "%.1f"},
+        "total": {"provider": "memory", "field": "total", "scale": 0.0009765625, "format": "%.0f"}
+      },
+      "style": {"color": "#b8ede9", "font_size": 22, "font": "caelestia-font", "align": "right"}
+    },
+    {
+      "id": "memory-bar",
+      "type": "bar",
+      "rect": {"x": 42, "y": 914, "width": 378, "height": 16},
+      "binding": {"provider": "memory", "field": "percent", "min": 0, "max": 100, "clamp": true},
+      "style": {"color": "#b8ede9", "track_color": "#0d484566", "radius": 8}
+    },
+    {
+      "id": "dimm-chip",
+      "type": "panel",
+      "rect": {"x": 42, "y": 950, "width": 378, "height": 38},
+      "style": {"background": "#0d4845", "radius": 19}
+    },
+    {
+      "id": "dimm-temps",
+      "type": "text",
+      "rect": {"x": 58, "y": 959, "width": 346, "height": 22},
+      "text": "DIMM A  {a}     DIMM B  {b}",
+      "bindings": {
+        "a": {"provider": "motherboard", "field": "dimm1_temp", "formatter": "temperature_or_dash"},
+        "b": {"provider": "motherboard", "field": "dimm2_temp", "formatter": "temperature_or_dash"}
+      },
+      "style": {"color": "#b8ede9", "font_size": 15, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "storage-card",
+      "type": "panel",
+      "rect": {"x": 18, "y": 1038, "width": 426, "height": 260},
+      "style": {"background": "#131b1a", "border_color": "#3f4a49", "border_width": 1, "radius": 44}
+    },
+    {
+      "id": "storage-label",
+      "type": "text",
+      "rect": {"x": 44, "y": 1068, "width": 160, "height": 28},
+      "text": "Storage",
+      "style": {"color": "#dce8e6", "font_size": 20, "font": "caelestia-font"}
+    },
+    {
+      "id": "disk-name",
+      "type": "text",
+      "rect": {"x": 44, "y": 1118, "width": 220, "height": 34},
+      "binding": {"provider": "disk", "field": "label", "select": "best", "max_length": 16},
+      "style": {"color": "#a2adac", "font_size": 20, "font": "caelestia-font"}
+    },
+    {
+      "id": "disk-percent",
+      "type": "value",
+      "rect": {"x": 280, "y": 1102, "width": 138, "height": 58},
+      "binding": {"provider": "disk", "field": "percent", "select": "best", "min": 0, "max": 100, "clamp": true, "format": "%.0f%%"},
+      "style": {"color": "#9bd0cc", "font_size": 44, "font": "caelestia-font", "align": "right"}
+    },
+    {
+      "id": "disk-usage",
+      "type": "text",
+      "rect": {"x": 44, "y": 1172, "width": 374, "height": 30},
+      "text": "{used} of {total} GB used",
+      "bindings": {
+        "used": {"provider": "disk", "field": "used", "select": "best", "format": "%.0f"},
+        "total": {"provider": "disk", "field": "total", "select": "best", "format": "%.0f"}
+      },
+      "style": {"color": "#a2adac", "font_size": 18, "font": "caelestia-font"}
+    },
+    {
+      "id": "disk-bar",
+      "type": "bar",
+      "rect": {"x": 44, "y": 1232, "width": 374, "height": 18},
+      "binding": {"provider": "disk", "field": "percent", "select": "best", "min": 0, "max": 100, "clamp": true},
+      "style": {"color": "#9bd0cc", "track_color": "#dce8e622", "radius": 9}
+    },
+    {
+      "id": "network-card",
+      "type": "panel",
+      "rect": {"x": 18, "y": 1324, "width": 426, "height": 252},
+      "style": {"background": "#192120", "border_color": "#3f4a49", "border_width": 1, "radius": 44}
+    },
+    {
+      "id": "network-label",
+      "type": "text",
+      "rect": {"x": 44, "y": 1352, "width": 180, "height": 28},
+      "text": "Network",
+      "style": {"color": "#dce8e6", "font_size": 20, "font": "caelestia-font"}
+    },
+    {
+      "id": "network-chart",
+      "type": "line",
+      "rect": {"x": 44, "y": 1402, "width": 374, "height": 58},
+      "binding": {"provider": "network", "field": "rx_rate", "select": "best"},
+      "series": [{"provider": "network", "field": "tx_rate", "select": "best"}],
+      "history_seconds": 90,
+      "style": {"color": "#9bd0cc"}
+    },
+    {
+      "id": "download-chip",
+      "type": "panel",
+      "rect": {"x": 42, "y": 1480, "width": 178, "height": 64},
+      "style": {"background": "#27403e", "radius": 28}
+    },
+    {
+      "id": "upload-chip",
+      "type": "panel",
+      "rect": {"x": 242, "y": 1480, "width": 178, "height": 64},
+      "style": {"background": "#255369", "radius": 28}
+    },
+    {
+      "id": "download",
+      "type": "value",
+      "rect": {"x": 58, "y": 1492, "width": 146, "height": 28},
+      "binding": {"provider": "network", "field": "rx_rate", "select": "best", "formatter": "bps"},
+      "style": {"color": "#a9c5c2", "font_size": 18, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "download-label",
+      "type": "text",
+      "rect": {"x": 58, "y": 1520, "width": 146, "height": 18},
+      "text": "DOWNLOAD",
+      "style": {"color": "#a2adac", "font_size": 11, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "upload",
+      "type": "value",
+      "rect": {"x": 258, "y": 1492, "width": 146, "height": 28},
+      "binding": {"provider": "network", "field": "tx_rate", "select": "best", "formatter": "bps"},
+      "style": {"color": "#b6e3fe", "font_size": 18, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "upload-label",
+      "type": "text",
+      "rect": {"x": 258, "y": 1520, "width": 146, "height": 18},
+      "text": "UPLOAD",
+      "style": {"color": "#a2adac", "font_size": 11, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "details-card",
+      "type": "panel",
+      "rect": {"x": 18, "y": 1602, "width": 426, "height": 296},
+      "style": {"background": "#0e1514", "border_color": "#3f4a49", "border_width": 1, "radius": 44}
+    },
+    {
+      "id": "details-label",
+      "type": "text",
+      "rect": {"x": 44, "y": 1632, "width": 220, "height": 28},
+      "text": "Hardware details",
+      "style": {"color": "#dce8e6", "font_size": 20, "font": "caelestia-font"}
+    },
+    {
+      "id": "cpu-model-label",
+      "type": "text",
+      "rect": {"x": 44, "y": 1682, "width": 68, "height": 22},
+      "text": "CPU",
+      "style": {"color": "#9bd0cc", "font_size": 14, "font": "caelestia-font"}
+    },
+    {
+      "id": "cpu-model",
+      "type": "text",
+      "rect": {"x": 112, "y": 1682, "width": 306, "height": 24},
+      "binding": {"provider": "cpu", "field": "name", "max_length": 28},
+      "style": {"color": "#a2adac", "font_size": 14, "font": "caelestia-font", "align": "right"}
+    },
+    {
+      "id": "gpu-model-label",
+      "type": "text",
+      "rect": {"x": 44, "y": 1724, "width": 68, "height": 22},
+      "text": "GPU",
+      "style": {"color": "#d5efff", "font_size": 14, "font": "caelestia-font"}
+    },
+    {
+      "id": "gpu-model",
+      "type": "text",
+      "rect": {"x": 112, "y": 1724, "width": 306, "height": 24},
+      "binding": {
+        "provider": "nvidia_gpu", "field": "name", "max_length": 28,
+        "fallbacks": [{"provider": "amd_gpu", "field": "name", "max_length": 28}]
+      },
+      "style": {"color": "#a2adac", "font_size": 14, "font": "caelestia-font", "align": "right"}
+    },
+    {
+      "id": "fan-chip",
+      "type": "panel",
+      "rect": {"x": 42, "y": 1780, "width": 116, "height": 78},
+      "style": {"background": "#192120", "radius": 26}
+    },
+    {
+      "id": "power-chip",
+      "type": "panel",
+      "rect": {"x": 173, "y": 1780, "width": 116, "height": 78},
+      "style": {"background": "#27403e", "radius": 26}
+    },
+    {
+      "id": "vram-chip",
+      "type": "panel",
+      "rect": {"x": 304, "y": 1780, "width": 116, "height": 78},
+      "style": {"background": "#255369", "radius": 26}
+    },
+    {
+      "id": "fan-value",
+      "type": "value",
+      "rect": {"x": 50, "y": 1794, "width": 100, "height": 28},
+      "binding": {
+        "provider": "motherboard", "field": "cpu_fan", "formatter": "rpm", "fallback_on_zero": true,
+        "fallbacks": [{"provider": "motherboard", "field": "system_fan1", "formatter": "rpm"}]
+      },
+      "style": {"color": "#9bd0cc", "font_size": 17, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "fan-label",
+      "type": "text",
+      "rect": {"x": 50, "y": 1828, "width": 100, "height": 18},
+      "text": "CPU FAN",
+      "style": {"color": "#a2adac", "font_size": 11, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "power-value",
+      "type": "value",
+      "rect": {"x": 181, "y": 1794, "width": 100, "height": 28},
+      "binding": {
+        "provider": "nvidia_gpu", "field": "power", "format": "%.0f W",
+        "fallbacks": [{"provider": "amd_gpu", "field": "power", "format": "%.0f W"}]
+      },
+      "style": {"color": "#a9c5c2", "font_size": 17, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "power-label",
+      "type": "text",
+      "rect": {"x": 181, "y": 1828, "width": 100, "height": 18},
+      "text": "GPU POWER",
+      "style": {"color": "#a2adac", "font_size": 11, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "vram-value",
+      "type": "value",
+      "rect": {"x": 312, "y": 1794, "width": 100, "height": 28},
+      "binding": {
+        "provider": "nvidia_gpu", "field": "memory_used", "formatter": "gb_mb",
+        "fallbacks": [{"provider": "amd_gpu", "field": "memory_used", "formatter": "gb_mb"}]
+      },
+      "style": {"color": "#b6e3fe", "font_size": 17, "font": "caelestia-font", "align": "center"}
+    },
+    {
+      "id": "vram-label",
+      "type": "text",
+      "rect": {"x": 312, "y": 1828, "width": 100, "height": 18},
+      "text": "VRAM USED",
+      "style": {"color": "#a2adac", "font_size": 11, "font": "caelestia-font", "align": "center"}
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/oae/sensorpanel/pkg/browser"
 	"github.com/oae/sensorpanel/pkg/config"
 	"github.com/oae/sensorpanel/pkg/device"
+	"github.com/oae/sensorpanel/pkg/management"
 	"github.com/oae/sensorpanel/pkg/music"
 	"github.com/oae/sensorpanel/pkg/nativerender"
 	"github.com/oae/sensorpanel/pkg/panel"
@@ -44,12 +46,13 @@ var (
 	runTargetFPS      float64
 	runJPEGQuality    int
 	runJPEGEncoder    string
+	runManagement     bool
+	runManagementAddr string
 )
 
-const (
-	themeSensorInterval       = time.Second
-	nativeIdleKeepaliveWindow = 750 * time.Millisecond
-)
+const nativeIdleKeepaliveWindow = 750 * time.Millisecond
+
+var themeSensorInterval = time.Second
 
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -112,6 +115,8 @@ func init() {
 	runCmd.Flags().Float64Var(&runTargetFPS, "target-fps", 0, "Native theme animation target FPS (0 uses theme profile)")
 	runCmd.Flags().IntVar(&runJPEGQuality, "jpeg-quality", 0, "LY JPEG quality 1-100 (0 uses theme profile)")
 	runCmd.Flags().StringVar(&runJPEGEncoder, "jpeg-encoder", "auto", "LY JPEG encoder: auto, stdlib, or turbo")
+	runCmd.Flags().BoolVar(&runManagement, "management", true, "Serve the local management Studio")
+	runCmd.Flags().StringVar(&runManagementAddr, "management-address", "", "Management Studio address (localhost only)")
 }
 
 func runDashboard(cmd *cobra.Command, args []string) error {
@@ -144,6 +149,17 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	}
 	if !cmd.Flags().Changed("renderer") && cfg.Renderer != "" {
 		runRenderer = cfg.Renderer
+	}
+	if !cmd.Flags().Changed("orientation") {
+		runOrientation = cfg.Orientation
+	}
+	if cfg.Management != nil {
+		if !cmd.Flags().Changed("management") {
+			runManagement = cfg.Management.Enabled
+		}
+		if !cmd.Flags().Changed("management-address") {
+			runManagementAddr = cfg.Management.Address
+		}
 	}
 	if runRenderer, err = config.NormalizeRenderer(runRenderer); err != nil {
 		return err
@@ -185,6 +201,9 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	if runInterval < minimumInterval {
 		runInterval = minimumInterval
 	}
+	// Sensor polling is deliberately independent from animation FPS. Hardware
+	// providers are never polled faster than twice per second.
+	themeSensorInterval = time.Duration(max(0.5, runInterval) * float64(time.Second))
 
 	fmt.Printf("Connected: %s\n", dev.Info.String())
 
@@ -215,6 +234,11 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 		enabledSensors = make(map[string]bool)
 		for _, s := range runSensors {
 			enabledSensors[s] = true
+		}
+	} else if cfg.EnabledSensors != nil {
+		enabledSensors = make(map[string]bool, len(cfg.EnabledSensors))
+		for _, sensor := range cfg.EnabledSensors {
+			enabledSensors[sensor] = true
 		}
 	}
 	// If no --sensors flag, enabledSensors stays nil (all enabled)
@@ -249,7 +273,7 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 
 	sensorConfig := &sensors.Config{
 		EnabledSensors:  enabledSensors,
-		DisabledSensors: runExcludeSensors,
+		DisabledSensors: append(append([]string(nil), cfg.DisabledSensors...), runExcludeSensors...),
 		Options:         options,
 	}
 	collector := sensors.NewCollector(sensorConfig)
@@ -450,7 +474,7 @@ func runWithTheme(dev *panel.Device, collector *sensors.Collector, cfg *config.C
 		if !t.HasNative {
 			return fmt.Errorf("theme '%s' has no native.theme.json; use --renderer chrome or add a native theme definition", themeName)
 		}
-		return runWithNativeTheme(dev, collector, t, sigChan)
+		return runWithNativeTheme(dev, collector, cfg, t, sigChan)
 	case config.RendererChrome:
 		return runWithChromeTheme(dev, collector, t, sigChan)
 	default:
@@ -548,21 +572,49 @@ func runWithChromeTheme(dev *panel.Device, collector *sensors.Collector, t *them
 	}
 }
 
-// runWithNativeTheme runs the dashboard using a native Go renderer.
-func runWithNativeTheme(dev *panel.Device, collector *sensors.Collector, t *theme.Theme, sigChan chan os.Signal) error {
+type nativeRuntime struct {
+	definition    *nativerender.Theme
+	renderer      *nativerender.Renderer
+	activeFPS     float64
+	idleFPS       float64
+	idleTimeout   time.Duration
+	jpegQuality   int
+	effectiveJPEG string
+}
+
+func loadNativeRuntime(dev *panel.Device, t *theme.Theme) (*nativeRuntime, error) {
 	nativeTheme, err := nativerender.Load(t.NativePath())
 	if err != nil {
-		return fmt.Errorf("failed to load native theme '%s': %w", t.Name, err)
+		return nil, fmt.Errorf("failed to load native theme '%s': %w", t.Name, err)
 	}
-	render := nativerender.New(nativeTheme, dev.RenderWidth(), dev.RenderHeight())
-	defer render.Close()
+	if err := nativeTheme.Validate(); err != nil {
+		return nil, fmt.Errorf("validate native theme '%s': %w", t.Name, err)
+	}
+	logicalWidth, logicalHeight := dev.RenderWidth(), dev.RenderHeight()
+	themeWidth, themeHeight := nativeTheme.Width, nativeTheme.Height
+	if nativeTheme.Canvas != nil {
+		themeWidth, themeHeight = nativeTheme.Canvas.Width, nativeTheme.Canvas.Height
+	}
+	if themeWidth > 0 && themeHeight > 0 &&
+		(themeWidth != logicalWidth || themeHeight != logicalHeight) {
+		return nil, fmt.Errorf(
+			"native theme %q canvas is %dx%d, but display orientation %d requires %dx%d; choose an orientation matching the theme",
+			t.Name, themeWidth, themeHeight, dev.Orientation, logicalWidth, logicalHeight)
+	}
+	render := nativerender.New(nativeTheme, logicalWidth, logicalHeight)
 	if dev.Profile.ProtocolType() == device.ProtocolLYBulk {
 		if err := render.ConfigureWire(dev.Profile.Width(), dev.Profile.Height(), 180-dev.Orientation); err != nil {
-			return err
+			_ = render.Close()
+			return nil, err
 		}
 	}
 	if err := render.LoadBackgroundSequence(t.Path); err != nil {
-		fmt.Printf("Warning: failed to load native background sequence: %v\n", err)
+		_ = render.Close()
+		return nil, fmt.Errorf("load native background: %w", err)
+	}
+	if err := render.LoadAssets(t.Path); err != nil {
+		_ = render.Close()
+		return nil, fmt.Errorf("load native assets: %w", err)
 	}
 
 	targetFPS := render.PreferredFPS()
@@ -591,6 +643,21 @@ func runWithNativeTheme(dev *panel.Device, collector *sensors.Collector, t *them
 			idleFPS = sourceFPS
 		}
 	}
+	// A static V2 scene changes only when a sensor sample changes. Rendering it
+	// at animation cadence wastes CPU and USB bandwidth without producing a
+	// different frame.
+	if render.BackgroundFrameCount() <= 1 && runTargetFPS <= 0 {
+		staticFPS := 1 / themeSensorInterval.Seconds()
+		if staticFPS < 1 {
+			staticFPS = 1
+		}
+		if activeFPS > staticFPS {
+			activeFPS = staticFPS
+		}
+		if idleFPS > staticFPS {
+			idleFPS = staticFPS
+		}
+	}
 	if activeFPS <= 0 {
 		activeFPS = 1
 	}
@@ -609,18 +676,119 @@ func runWithNativeTheme(dev *panel.Device, collector *sensors.Collector, t *them
 		jpegQuality = runJPEGQuality
 	}
 	if err := dev.SetJPEGOptions(jpegQuality, jpegEncoder); err != nil {
-		return err
+		_ = render.Close()
+		return nil, err
 	}
 	effectiveJPEG, err := dev.PrepareJPEGEncoder()
 	if err != nil {
+		_ = render.Close()
+		return nil, err
+	}
+	return &nativeRuntime{
+		definition:    nativeTheme,
+		renderer:      render,
+		activeFPS:     activeFPS,
+		idleFPS:       idleFPS,
+		idleTimeout:   idleTimeout,
+		jpegQuality:   jpegQuality,
+		effectiveJPEG: effectiveJPEG,
+	}, nil
+}
+
+func (r *nativeRuntime) Close() {
+	if r != nil && r.renderer != nil {
+		_ = r.renderer.Close()
+	}
+}
+
+type nativeReloadRequest struct {
+	result chan error
+}
+
+type nativeConfigRequest struct {
+	config *config.Config
+	result chan error
+}
+
+// runWithNativeTheme runs the dashboard using a native Go renderer and hosts
+// the optional management Studio beside the USB render loop.
+func runWithNativeTheme(dev *panel.Device, collector *sensors.Collector, cfg *config.Config, t *theme.Theme, sigChan chan os.Signal) error {
+	runtimeState, err := loadNativeRuntime(dev, t)
+	if err != nil {
 		return err
 	}
+	defer func() { runtimeState.Close() }()
+	render := runtimeState.renderer
+	activeFPS, idleFPS, idleTimeout := runtimeState.activeFPS, runtimeState.idleFPS, runtimeState.idleTimeout
 
 	fmt.Printf("Using theme: %s (renderer: native)\n", t.Name)
 	if frames := render.BackgroundFrameCount(); frames > 0 {
-		fmt.Printf("Native background sequence: %d frames at %.1f FPS (active %.1f, idle %.1f after %s, decode %s, JPEG %s/%d)\n", frames, render.PreferredFPS(), activeFPS, idleFPS, idleTimeout, render.BackgroundDecoder(), effectiveJPEG, jpegQuality)
+		fmt.Printf("Native background sequence: %d frames at %.1f FPS (active %.1f, idle %.1f after %s, decode %s, JPEG %s/%d)\n",
+			frames, render.PreferredFPS(), activeFPS, idleFPS, idleTimeout,
+			render.BackgroundDecoder(), runtimeState.effectiveJPEG, runtimeState.jpegQuality)
 	}
 	fmt.Printf("Dashboard running (adaptive %.1f/%.1f FPS, %.2fs sensor interval). Press Ctrl+C to stop.\n", activeFPS, idleFPS, themeSensorInterval.Seconds())
+
+	reloadRequests := make(chan nativeReloadRequest)
+	configRequests := make(chan nativeConfigRequest)
+	var activeThemeName atomic.Value
+	activeThemeName.Store(t.Name)
+	var effectiveConfig atomic.Value
+	initialConfig := *cfg
+	initialConfig.Theme = t.Name
+	initialConfig.Brightness = runBrightness
+	initialConfig.Orientation = dev.Orientation
+	initialConfig.UpdateInterval = themeSensorInterval.Seconds()
+	effectiveConfig.Store(&initialConfig)
+	if runManagement {
+		manager, managerErr := management.New(management.Options{
+			Address:     runManagementAddr,
+			Collector:   collector,
+			ActiveTheme: func() string { return activeThemeName.Load().(string) },
+			CurrentConfig: func() *config.Config {
+				current := effectiveConfig.Load().(*config.Config)
+				snapshot := *current
+				return &snapshot
+			},
+			Status: func() any {
+				width, height := dev.RenderDimensions()
+				return map[string]any{
+					"state": "running", "theme": activeThemeName.Load().(string), "renderer": "native",
+					"width": width, "height": height,
+					"device": dev.Info.String(),
+				}
+			},
+			ApplyTheme: func(name string) error {
+				if name != activeThemeName.Load().(string) {
+					return fmt.Errorf("select theme %q before applying it", name)
+				}
+				response := make(chan error, 1)
+				select {
+				case reloadRequests <- nativeReloadRequest{result: response}:
+				case <-time.After(10 * time.Second):
+					return fmt.Errorf("renderer reload timed out")
+				}
+				return <-response
+			},
+			ApplyConfig: func(updated *config.Config) error {
+				response := make(chan error, 1)
+				select {
+				case configRequests <- nativeConfigRequest{config: updated, result: response}:
+				case <-time.After(10 * time.Second):
+					return fmt.Errorf("panel settings reload timed out")
+				}
+				return <-response
+			},
+		})
+		if managerErr != nil {
+			fmt.Printf("Warning: management Studio unavailable: %v\n", managerErr)
+		} else if managerErr = manager.Start(); managerErr != nil {
+			fmt.Printf("Warning: management Studio unavailable: %v\n", managerErr)
+		} else {
+			defer manager.Close()
+			fmt.Printf("Management Studio: %s\n", manager.URL())
+		}
+	}
 
 	collector.CollectAll()
 	time.Sleep(100 * time.Millisecond)
@@ -664,6 +832,91 @@ func runWithNativeTheme(dev *panel.Device, collector *sensors.Collector, t *them
 			state.forceDisplay = true
 			nextFrame = time.Now()
 			resetTimer(nextFrame)
+		case request := <-reloadRequests:
+			reloaded, reloadErr := loadNativeRuntime(dev, t)
+			if reloadErr == nil {
+				old := runtimeState
+				runtimeState = reloaded
+				render = reloaded.renderer
+				activeFPS, idleFPS, idleTimeout = reloaded.activeFPS, reloaded.idleFPS, reloaded.idleTimeout
+				state = &themeFrameState{forceDisplay: true}
+				nextFrame = time.Now()
+				old.Close()
+				fmt.Printf("Native theme reloaded from Studio (active %.1f, idle %.1f FPS)\n", activeFPS, idleFPS)
+			}
+			request.result <- reloadErr
+			resetTimer(nextFrame)
+			continue
+		case request := <-configRequests:
+			oldBrightness := cfg.Brightness
+			applyErr := dev.SetBacklight(request.config.Brightness)
+			oldOrientation := dev.Orientation
+			oldSensorInterval := themeSensorInterval
+			targetTheme := t
+			needsReload := request.config.Orientation != dev.Orientation
+			if request.config.UpdateInterval > 0 {
+				nextInterval := time.Duration(max(0.5, request.config.UpdateInterval) * float64(time.Second))
+				if nextInterval != themeSensorInterval {
+					themeSensorInterval = nextInterval
+					needsReload = true
+				}
+			}
+			if applyErr == nil && request.config.Theme != "" && request.config.Theme != t.Name {
+				targetTheme, applyErr = theme.Load(request.config.Theme)
+				if applyErr == nil && !targetTheme.HasNative {
+					applyErr = fmt.Errorf("theme %q has no native definition", request.config.Theme)
+				}
+				needsReload = true
+			}
+			if applyErr == nil && request.config.Orientation != dev.Orientation {
+				applyErr = dev.SetOrientation(request.config.Orientation)
+			}
+			if applyErr == nil && needsReload {
+				reloaded, reloadErr := loadNativeRuntime(dev, targetTheme)
+				applyErr = reloadErr
+				if reloadErr == nil {
+					old := runtimeState
+					runtimeState = reloaded
+					render = reloaded.renderer
+					activeFPS, idleFPS, idleTimeout = reloaded.activeFPS, reloaded.idleFPS, reloaded.idleTimeout
+					state = &themeFrameState{forceDisplay: true}
+					t = targetTheme
+					activeThemeName.Store(t.Name)
+					old.Close()
+				} else {
+					_ = dev.SetOrientation(oldOrientation)
+					themeSensorInterval = oldSensorInterval
+				}
+			}
+			if applyErr == nil {
+				var enabled map[string]bool
+				if request.config.EnabledSensors != nil {
+					enabled = make(map[string]bool, len(request.config.EnabledSensors))
+					for _, sensor := range request.config.EnabledSensors {
+						enabled[sensor] = true
+					}
+				}
+				collector.Reconfigure(&sensors.Config{
+					EnabledSensors: enabled, DisabledSensors: request.config.DisabledSensors,
+					Options: request.config.SensorOptions,
+				})
+				cfg = request.config
+				snapshot := *request.config
+				snapshot.Theme = t.Name
+				snapshot.Orientation = dev.Orientation
+				snapshot.UpdateInterval = themeSensorInterval.Seconds()
+				effectiveConfig.Store(&snapshot)
+			} else {
+				themeSensorInterval = oldSensorInterval
+				if dev.Orientation != oldOrientation {
+					_ = dev.SetOrientation(oldOrientation)
+				}
+				_ = dev.SetBacklight(oldBrightness)
+			}
+			request.result <- applyErr
+			nextFrame = time.Now()
+			resetTimer(nextFrame)
+			continue
 		case <-timer.C:
 		}
 
@@ -848,6 +1101,9 @@ func renderNativeThemeFrame(dev *panel.Device, collector *sensors.Collector, ren
 	var collected bool
 	state.data, collected = collector.CollectScheduled(now, idleMode)
 	timing.Sensor = time.Since(started)
+	if collected {
+		render.RecordSnapshot(state.data, now)
+	}
 	minuteKey := now.YearDay()*24*60 + now.Hour()*60 + now.Minute()
 	if collected || state.viewSignature == "" || state.signatureMinute != minuteKey {
 		state.viewSignature = render.ViewSignature(state.data, now)

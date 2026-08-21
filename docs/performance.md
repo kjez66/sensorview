@@ -28,6 +28,10 @@ During active playback:
 The scheduler uses monotonic deadlines. If work misses a deadline it drops the
 obsolete animation position instead of building a queue.
 
+For a static image or sensor-only V2 scene, the scheduler caps rendering to the
+sensor collection cadence. A configured `active_fps: 24` therefore does not
+cause 24 identical renders per second when no multi-frame background exists.
+
 In idle mode the video decoder is not used. The renderer redraws directly with
 a monochrome palette only after a visible value/minute change, then resends the
 cached pixels at 1 FPS to keep the panel firmware from restoring its splash

@@ -137,6 +137,18 @@ func (d *Device) RenderHeight() int {
 	return d.Profile.Height()
 }
 
+// RenderDimensions returns a synchronized snapshot for status and management
+// goroutines. RenderWidth and RenderHeight remain lock-free because the
+// low-level display path calls them while already holding d.mu.
+func (d *Device) RenderDimensions() (int, int) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.Profile.ProtocolType() == device.ProtocolLYBulk && (d.Orientation == 90 || d.Orientation == 270) {
+		return d.Profile.Height(), d.Profile.Width()
+	}
+	return d.Profile.Width(), d.Profile.Height()
+}
+
 func normalizeOrientation(degrees int) (int, error) {
 	degrees %= 360
 	if degrees < 0 {
