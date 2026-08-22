@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source_theme="$(cd -- "$script_dir/../themes/caelestia" && pwd)"
+state_root="${XDG_STATE_HOME:-$HOME/.local/state}/caelestia"
+data_root="${XDG_DATA_HOME:-$HOME/.local/share}"
+target_theme="$data_root/sensorpanel/themes/caelestia"
+scheme_file="$state_root/scheme.json"
+wallpaper_file="$state_root/wallpaper/current"
+api_base="http://127.0.0.1:19848/api/v1"
+runtime_root="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+for command_name in curl flock install jq mktemp; do
+    command -v "$command_name" >/dev/null 2>&1 || {
+        printf 'Required command is missing: %s\n' "$command_name" >&2
+        exit 1
+    }
+done
+
+[[ -r "$scheme_file" ]] || {
+    printf 'Caelestia scheme is unavailable: %s\n' "$scheme_file" >&2
+    exit 1
+}
+[[ -r "$wallpaper_file" ]] || {
+    printf 'Caelestia wallpaper is unavailable: %s\n' "$wallpaper_file" >&2
+    exit 1
+}
+
+exec 9>"$runtime_root/caelestia-sensorpanel-sync.lock"
+flock 9
+
+temporary_dir="$(mktemp -d)"
+trap 'rm -rf -- "$temporary_dir"' EXIT
+replacements_file="$temporary_dir/replacements.json"
+generated_theme="$temporary_dir/native.theme.json"
+generated_wallpaper="$temporary_dir/wallpaper.jpg"
+
+jq -n \
+    --slurpfile scheme "$scheme_file" \
+    --slurpfile slots "$source_theme/caelestia-palette.json" \
+    '($scheme[0].colours) as $colours |
+     reduce ($slots[0] | to_entries[]) as $entry ({};
+       ($entry.value | split(":")) as $spec |
+       .[$entry.key] = ("#" + $colours[$spec[0]] + ($spec[1] // ""))
+     )' >"$replacements_file"
+
+jq --slurpfile replacements "$replacements_file" \
+    '($replacements[0]) as $colours |
+     walk(if type == "string" and $colours[.] != null then $colours[.] else . end)' \
+    "$source_theme/native.theme.json" >"$generated_theme"
+
+if command -v magick >/dev/null 2>&1; then
+    magick "$wallpaper_file" -auto-orient -resize '462x1920^' \
+        -gravity center -extent 462x1920 -strip -quality 88 "$generated_wallpaper"
+else
+    install -m 0644 "$wallpaper_file" "$generated_wallpaper"
+fi
+
+# Development installs may link the asset directory back to the repository.
+# Replace only that link so dynamic wallpaper updates never dirty source files.
+if [[ -L "$target_theme/assets" ]]; then
+    unlink "$target_theme/assets"
+fi
+mkdir -p "$target_theme/assets"
+install -m 0644 "$source_theme/package.json" "$target_theme/package.json"
+install -m 0644 "$source_theme/caelestia-palette.json" "$target_theme/caelestia-palette.json"
+install -m 0644 "$source_theme/assets/GoogleSansFlex.ttf" "$target_theme/assets/GoogleSansFlex.ttf"
+install -m 0644 "$source_theme/assets/LICENSE.GoogleSansFlex" "$target_theme/assets/LICENSE.GoogleSansFlex"
+
+if cmp -s "$generated_theme" "$target_theme/native.theme.json" &&
+   cmp -s "$generated_wallpaper" "$target_theme/assets/wallpaper.jpg"; then
+    exit 0
+fi
+
+install -m 0644 "$generated_wallpaper" "$target_theme/assets/wallpaper.jpg"
+install -m 0644 "$generated_theme" "$target_theme/native.theme.draft.json"
+
+session_json="$(curl --connect-timeout 1 --max-time 2 --fail --silent --show-error \
+    "$api_base/session" 2>/dev/null || true)"
+session_token="$(jq -r '.token // empty' <<<"$session_json")"
+if [[ -n "$session_token" ]] &&
+   curl --connect-timeout 1 --max-time 12 --fail --silent --show-error \
+       -X POST -H "X-SensorPanel-Token: $session_token" \
+       "$api_base/theme/apply?name=caelestia" >/dev/null; then
+    printf 'SensorPanel reloaded with the current Caelestia palette and wallpaper.\n'
+    exit 0
+fi
+
+# Preserve the update for the next service start and restart only when the
+# running management API was unavailable.
+install -m 0644 "$generated_theme" "$target_theme/native.theme.json"
+systemctl --user try-restart sensorpanel.service >/dev/null 2>&1 || true
+printf 'SensorPanel theme updated; runtime hot reload was unavailable.\n'

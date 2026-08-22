@@ -1,0 +1,22 @@
+{
+  "#0a0f0f": "background",
+  "#0a0f0fcc": "background:cc",
+  "#0d4845": "onPrimary",
+  "#0d484566": "onPrimary:66",
+  "#0e1514": "surfaceContainerLow",
+  "#131b1a": "surfaceContainer",
+  "#192120": "surfaceContainerHigh",
+  "#255369": "onTertiaryContainer",
+  "#255b58": "primaryContainer",
+  "#27403e": "secondaryContainer",
+  "#3f4a49": "outlineVariant",
+  "#9bd0cc": "primary",
+  "#a2adac": "onSurfaceVariant",
+  "#a9c5c2": "onSecondaryContainer",
+  "#b0ccc9": "secondary",
+  "#b6e3fe": "tertiaryDim",
+  "#b8ede9": "onPrimaryContainer",
+  "#d5efff": "tertiary",
+  "#dce8e6": "onSurface",
+  "#dce8e622": "onSurface:22"
+}

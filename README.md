@@ -337,6 +337,21 @@ sensorpanel run --orientation 90 --renderer native
 sensorpanel run --orientation 90 --renderer native --target-fps 12 --jpeg-quality 80
 ```
 
+The included `caelestia` theme can follow Caelestia Shell's current Material
+palette and wallpaper. Its palette map assigns every theme colour to a
+Caelestia scheme role, including translucent surfaces. Run the sync directly,
+or use it as Caelestia CLI's wallpaper and theme post-hook:
+
+```bash
+./scripts/sync-caelestia-theme
+```
+
+The script reads `~/.local/state/caelestia/scheme.json` and the current
+wallpaper, generates an optimized 462×1920 runtime theme, and hot-reloads the
+native renderer through the local Management Studio API. An already matching
+theme is left untouched, and an unavailable API falls back to restarting the
+active systemd user service.
+
 The included Trofeo theme adapts to desktop activity on Linux: it uses 24 FPS
 while you are active, then changes to a monochrome, video-free dashboard after
 20 seconds of inactivity. The monochrome frame is redrawn only when a displayed
