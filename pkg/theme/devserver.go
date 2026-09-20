@@ -16,6 +16,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"github.com/oae/sensorpanel/pkg/lan"
 	"github.com/oae/sensorpanel/pkg/sensors"
 )
 
@@ -122,13 +123,13 @@ func (d *DevServer) Start(ctx context.Context) error {
 // Without them the only address shown is localhost, which is of no use on the
 // phone the panel is meant to run on.
 func (d *DevServer) printLANURLs() {
-	interfaces, err := systemInterfaces()
+	interfaces, err := lan.SystemInterfaces()
 	if err != nil {
 		return
 	}
 
-	for _, address := range lanAddresses(interfaces) {
-		fmt.Printf("[dev] Phone/LAN: %s  (%s)\n", lanURL(address, d.VitePort, d.WSPort), address.Interface)
+	for _, address := range lan.Addresses(interfaces) {
+		fmt.Printf("[dev] Phone/LAN: %s  (%s)\n", lan.URL(address, d.VitePort, d.WSPort), address.Interface)
 	}
 }
 

@@ -13,12 +13,17 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// LoopbackAddress binds a random port on the loopback interface, which is all
+// the headless renderer on this machine needs.
+const LoopbackAddress = "127.0.0.1:0"
+
 // Server serves theme files and streams sensor data via WebSocket.
 type Server struct {
 	mu       sync.Mutex
 	listener net.Listener
 	server   *http.Server
 	distDir  string
+	addr     string
 
 	// WebSocket connections
 	clients   map[*websocket.Conn]bool
@@ -27,10 +32,18 @@ type Server struct {
 	upgrader websocket.Upgrader
 }
 
-// New creates a new theme server.
+// New creates a new theme server on the loopback interface.
 func New(distDir string) *Server {
+	return NewWithAddress(distDir, LoopbackAddress)
+}
+
+// NewWithAddress creates a theme server bound to addr, given as host:port. Use
+// an empty or zero port for any free one, and a wildcard host such as
+// "0.0.0.0:19847" to reach the panel from another device on the network.
+func NewWithAddress(distDir, addr string) *Server {
 	return &Server{
 		distDir: distDir,
+		addr:    addr,
 		clients: make(map[*websocket.Conn]bool),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -40,7 +53,7 @@ func New(distDir string) *Server {
 	}
 }
 
-// Start starts the server on a random available port.
+// Start starts the server on its configured address.
 func (s *Server) Start() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -49,7 +62,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("server already running")
 	}
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
 	}
@@ -80,7 +93,24 @@ func (s *Server) Port() int {
 	if s.listener == nil {
 		return 0
 	}
-	return s.listener.Addr().(*net.TCPAddr).Port
+	// Comma-ok: a bare assertion would panic if the listener were ever not TCP.
+	tcpAddr, ok := s.listener.Addr().(*net.TCPAddr)
+	if !ok {
+		return 0
+	}
+	return tcpAddr.Port
+}
+
+// Address returns the host:port the server is listening on, or an empty string
+// before it starts.
+func (s *Server) Address() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.listener == nil {
+		return ""
+	}
+	return s.listener.Addr().String()
 }
 
 // URL returns the base URL of the server.

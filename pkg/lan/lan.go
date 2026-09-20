@@ -1,35 +1,36 @@
-// Package theme - LAN address discovery for the dev server.
-package theme
+// Package lan discovers the addresses this host can be reached on from other
+// devices on the local network.
+package lan
 
 import (
 	"fmt"
 	"net"
 )
 
-// lanAddress is one address the dev server can be reached on from another
+// Address is one address this host can be reached on from another
 // device. The interface name is carried alongside it because a machine with a
 // VPN adapter has several, and the address alone does not say which to use.
-type lanAddress struct {
+type Address struct {
 	Interface string
 	IP        string
 }
 
-// networkInterface is the part of net.Interface this package needs, so that
+// NetworkInterface is the part of net.Interface this package needs, so that
 // address filtering can be exercised without touching the host network.
-type networkInterface struct {
+type NetworkInterface struct {
 	Name  string
 	Up    bool
 	Addrs []net.Addr
 }
 
-// systemInterfaces reports the interfaces of this host.
-func systemInterfaces() ([]networkInterface, error) {
+// SystemInterfaces reports the interfaces of this host.
+func SystemInterfaces() ([]NetworkInterface, error) {
 	found, err := net.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("list network interfaces: %w", err)
 	}
 
-	interfaces := make([]networkInterface, 0, len(found))
+	interfaces := make([]NetworkInterface, 0, len(found))
 	for _, iface := range found {
 		// An interface whose addresses cannot be read is skipped rather than
 		// failing the whole listing: one unusable adapter should not stop the
@@ -38,7 +39,7 @@ func systemInterfaces() ([]networkInterface, error) {
 		if err != nil {
 			continue
 		}
-		interfaces = append(interfaces, networkInterface{
+		interfaces = append(interfaces, NetworkInterface{
 			Name:  iface.Name,
 			Up:    iface.Flags&net.FlagUp != 0,
 			Addrs: addrs,
@@ -47,11 +48,11 @@ func systemInterfaces() ([]networkInterface, error) {
 	return interfaces, nil
 }
 
-// lanAddresses returns the IPv4 addresses another device on the network can
+// Addresses returns the IPv4 addresses another device on the network can
 // reach, skipping interfaces that are down and addresses that are not routable
 // from elsewhere.
-func lanAddresses(interfaces []networkInterface) []lanAddress {
-	var addresses []lanAddress
+func Addresses(interfaces []NetworkInterface) []Address {
+	var addresses []Address
 
 	for _, iface := range interfaces {
 		if !iface.Up {
@@ -65,7 +66,7 @@ func lanAddresses(interfaces []networkInterface) []lanAddress {
 			if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
 				continue
 			}
-			addresses = append(addresses, lanAddress{Interface: iface.Name, IP: ip.String()})
+			addresses = append(addresses, Address{Interface: iface.Name, IP: ip.String()})
 		}
 	}
 
@@ -85,9 +86,9 @@ func addrIPv4(addr net.Addr) net.IP {
 	}
 }
 
-// lanURL returns the address to open on another device. The sensor port is
+// URL returns the address to open on another device. The sensor port is
 // named explicitly so the theme SDK connects straight away instead of probing
 // the port range.
-func lanURL(address lanAddress, vitePort, wsPort int) string {
+func URL(address Address, vitePort, wsPort int) string {
 	return fmt.Sprintf("http://%s:%d/?ws=%d", address.IP, vitePort, wsPort)
 }
