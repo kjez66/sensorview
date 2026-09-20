@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 
@@ -110,10 +111,25 @@ func (d *DevServer) Start(ctx context.Context) error {
 	fmt.Printf("[dev] Theme dev server running\n")
 	fmt.Printf("[dev] Vite:      http://localhost:%d\n", d.VitePort)
 	fmt.Printf("[dev] WebSocket: ws://localhost:%d/ws\n", d.WSPort)
+	d.printLANURLs()
 	fmt.Println("[dev] Press Ctrl+C to stop")
 	fmt.Println()
 
 	return nil
+}
+
+// printLANURLs lists the addresses another device on the network can open.
+// Without them the only address shown is localhost, which is of no use on the
+// phone the panel is meant to run on.
+func (d *DevServer) printLANURLs() {
+	interfaces, err := systemInterfaces()
+	if err != nil {
+		return
+	}
+
+	for _, address := range lanAddresses(interfaces) {
+		fmt.Printf("[dev] Phone/LAN: %s  (%s)\n", lanURL(address, d.VitePort, d.WSPort), address.Interface)
+	}
 }
 
 // Stop stops all dev server components.
@@ -208,12 +224,16 @@ func (d *DevServer) startWSServer() error {
 	return nil
 }
 
+// viteArgs builds the command that runs the Vite dev server. Arguments after
+// the -- separator reach Vite itself rather than the package manager; --host
+// binds every interface so a phone or tablet on the LAN can load the theme.
+func viteArgs(pm PackageManager, port int) []string {
+	return append(pm.DevCmd(), "--", "--port", strconv.Itoa(port), "--host")
+}
+
 // startVite starts the Vite dev server.
 func (d *DevServer) startVite(pm PackageManager) error {
-	cmdArgs := pm.DevCmd()
-
-	// Add port flag for vite
-	cmdArgs = append(cmdArgs, "--", "--port", fmt.Sprintf("%d", d.VitePort))
+	cmdArgs := viteArgs(pm, d.VitePort)
 
 	d.viteCmd = exec.CommandContext(d.ctx, cmdArgs[0], cmdArgs[1:]...)
 	d.viteCmd.Dir = d.ThemeDir

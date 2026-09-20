@@ -7,6 +7,8 @@ export default defineConfig({
   server: {
     port: 15173,
     strictPort: false,
+    // Bind every interface so a phone or tablet on the LAN can load the theme.
+    host: true,
   },
   build: {
     outDir: "dist",
