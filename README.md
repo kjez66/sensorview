@@ -23,11 +23,45 @@ A cross-platform CLI tool for driving USB LCD displays as real-time system monit
 - **TypeScript SDK** - React hooks for easy theme development with hot reload
 - **Single-command dev** - One command starts everything for theme development
 - **Headless rendering** - Auto-downloads Chrome for Testing to render themes
-- **Cross-platform** - Works on Linux, macOS, and Windows
+- **Browser as panel** - Serve a theme to a phone or tablet on your network, no USB display needed
+- **Windows sensors** - Load, memory, network and NVIDIA GPU natively; temperatures and fans via LibreHardwareMonitor
+- **Cross-platform** - Runs on Linux, macOS and Windows; sensor coverage varies, see [Built-in Sensors](#built-in-sensors)
 - **Autostart service** - Install as system service on all platforms
 - **NixOS support** - Flake with module, udev rules, and systemd service
 
 ## Quick Start
+
+### Prerequisites
+
+Go 1.24 or newer, plus a C toolchain and libusb: USB panel support goes through
+cgo. Without them the build fails inside `gousb` with a list of `undefined:`
+errors, which looks like a broken checkout but is a missing toolchain.
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install -y libusb-1.0-0-dev libturbojpeg0-dev
+
+# macOS
+brew install libusb pkg-config
+```
+
+On Windows you need a gcc toolchain (mingw-w64, for example via MSYS2 or scoop)
+and libusb. CI uses vcpkg:
+
+```cmd
+vcpkg integrate install
+vcpkg install libusb:x64-windows
+```
+
+```powershell
+$env:CGO_ENABLED = "1"
+$env:CGO_CFLAGS  = "-IC:/vcpkg/installed/x64-windows/include/libusb-1.0"
+$env:CGO_LDFLAGS = "-LC:/vcpkg/installed/x64-windows/lib -lusb-1.0"
+```
+
+The sensor, theme and server packages need none of this, so
+`go test ./pkg/sensors/... ./pkg/theme/... ./pkg/display/...` works on a bare
+checkout. Only the binary itself needs libusb.
 
 ### 1. Build
 
@@ -141,6 +175,50 @@ Renderer mode only applies to normal themed sensor dashboards. GIF, image, and
 music modes use their dedicated render paths. `auto` selects `native` when the
 selected theme has `native.theme.json`; otherwise it uses the existing Chrome
 renderer.
+
+### Serve a Theme to a Browser
+
+Turns any browser into the panel. No USB display, no Node toolchain and no
+headless Chrome: the built theme and its sensor WebSocket are served from one
+port.
+
+```bash
+sensorpanel serve [name] [flags]
+
+Flags:
+      --addr string        Address to listen on (default 127.0.0.1:19847)
+  -i, --interval float     Sensor update interval in seconds (default 1.0)
+  -o, --opt strings        Sensor options (e.g., lhm.url=http://localhost:8085/data.json)
+```
+
+Build the theme first, then serve it:
+
+```bash
+sensorpanel theme build trofeo
+sensorpanel serve trofeo
+```
+
+To use a phone or tablet as the panel, bind every interface. The addresses to
+open are printed on startup, each labelled with its network interface, which
+matters on a machine with VPN or Hyper-V adapters:
+
+```bash
+sensorpanel serve trofeo --addr 0.0.0.0:19847
+```
+
+```
+Serving theme: trofeo
+[serve] Local:     http://localhost:19847/?ws=19847
+[serve] Phone/LAN: http://192.168.1.50:19847/?ws=19847  (Ethernet)
+[serve] Warning: sensor readings are served without authentication to anyone on this network
+```
+
+The default port is 19847 because the theme SDK probes it first, so the page and
+its WebSocket meet on the same port with no query parameter needed.
+
+> **The sensor feed has no authentication.** Anyone who can reach that port can
+> read your system metrics. The default binds loopback only; widen it only on a
+> network you trust. Windows may also need an inbound firewall rule for the port.
 
 ### Management Studio
 
@@ -409,12 +487,47 @@ SensorPanel uses a modular sensor provider system. Each sensor is a Go provider 
 
 | Sensor | Platforms | Description |
 |--------|-----------|-------------|
-| `cpu` | Linux | CPU load, temperature, frequency |
-| `memory` | Linux | RAM usage |
+| `cpu` | Linux, Windows | Load, frequency, core count, model name; temperature on Linux, or on Windows via LibreHardwareMonitor |
+| `memory` | Linux, Windows | RAM usage |
 | `disk` | Linux, macOS, Windows | Disk usage per mount point |
-| `network` | Linux | Network interface statistics |
-| `nvidia_gpu` | Linux | NVIDIA GPU via nvidia-smi |
+| `network` | Linux, Windows | Network interface statistics |
+| `motherboard` | Linux, Windows | Fan speeds, CPU voltage, DIMM temperatures; Windows needs LibreHardwareMonitor |
+| `nvidia_gpu` | Linux, Windows | NVIDIA GPU via NVML, falling back to `nvidia-smi` |
 | `amd_gpu` | Linux | AMD GPU via sysfs |
+| `hostname` | all | Machine hostname |
+
+On Windows, load and utilisation come from ordinary Win32 APIs, and NVIDIA
+readings from `nvml.dll` with no cgo. Temperatures, fan speeds and voltages are
+not reachable from user space at all; see below.
+
+There is no AMD GPU support on Windows. AMD's Windows API is ADLX, which has no
+Go bindings, and the Go bindings that do exist target ROCm and therefore Linux.
+
+### Windows: temperatures, fans and voltages
+
+Reading these needs MSR and super I/O access through a signed kernel driver, so
+SensorPanel bridges to [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
+rather than shipping a driver of its own:
+
+1. Install and run LibreHardwareMonitor.
+2. Enable **Options → Remote Web Server → Run**. It is off by default.
+3. Install [PawnIO](https://pawnio.eu), which is what makes CPU temperatures
+   readable. Without it LHM reports GPU temperatures but no CPU ones, and
+   `cpu.temperature` stays absent.
+
+The bridge is then detected automatically. Point it elsewhere if needed:
+
+```bash
+sensorpanel run --opt lhm.url=http://localhost:8085/data.json
+```
+
+Sensors LHM does not report are left absent rather than zeroed, so a missing
+reading shows as unavailable in a theme instead of a real 0 °C. With
+LibreHardwareMonitor not running, the `motherboard` sensor is unavailable and
+`cpu.temperature` is omitted; nothing else is affected.
+
+Per-DIMM temperatures are mapped when present, but most boards do not expose
+them to LHM at all.
 
 ### Create a Custom Sensor
 
@@ -438,12 +551,16 @@ If a sensor already exists but only for certain platforms, running `sensor creat
 ```bash
 ./sensorpanel sensor create
 Sensor ID: cpu
-Sensor 'cpu' already exists for platforms: linux
+Sensor 'cpu' already exists for platforms: linux, windows
 Which platform would you like to add?
   1. linux
   2. darwin (macOS)
   3. windows
 ```
+
+Providers are split per platform by build tag, one file per sensor: `cpu_linux.go`
+and `cpu_windows.go`. Keep the field set identical across platforms, or the
+generated TypeScript differs depending on where it was generated.
 
 ### Update TypeScript Types
 
@@ -479,6 +596,30 @@ sensorpanel theme dev my-theme --opt disk.mounts=/ --opt network.interface=eth*
 # - Starts Vite dev server with HMR (port 15173)
 # - Opens your browser
 ```
+
+The Vite dev server binds every interface, so a second device can load the theme
+while you edit it. The reachable addresses are printed on startup:
+
+```
+[dev] Vite:      http://localhost:15173
+[dev] WebSocket: ws://localhost:19847/ws
+[dev] Phone/LAN: http://192.168.1.50:15173/?ws=19847  (Ethernet)
+```
+
+### Using a phone or tablet as the panel
+
+Open one of the `Phone/LAN` addresses above on the device. Two things to know:
+
+- Use the IP address, not the hostname. Vite 6 blocks unknown `Host` headers as
+  DNS-rebinding protection, and IP literals are always allowed.
+- Windows may need an inbound firewall rule for ports 15173 and 19847.
+
+For a panel you leave running, prefer [`sensorpanel serve`](#serve-a-theme-to-a-browser)
+over `theme dev`: it serves the built theme from the single binary, with no Node
+process alive.
+
+Themes are authored at 480x320 with fixed pixel sizes. On a phone, either author
+at the device's resolution or scale the root element with a CSS `transform`.
 
 ### Using the SDK
 
