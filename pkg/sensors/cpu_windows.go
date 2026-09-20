@@ -22,13 +22,16 @@ var errNoCPUTimes = errors.New("no aggregate CPU time counters available")
 //
 // Load is derived from the aggregate CPU time counters (GetSystemTimes) rather
 // than gopsutil's cpu.Percent, which keeps its previous sample in package-level
-// state shared with every other caller. Temperature is deliberately absent:
-// reading it needs MSR access through a signed kernel driver, so there is
-// nothing to report from user space.
+// state shared with every other caller. Temperature cannot be read from user
+// space at all, so it comes from the LibreHardwareMonitor bridge when that is
+// running and is simply absent otherwise.
 type windowsCPUProvider struct {
 	readTimes func() (cpu.TimesStat, error)
 	readInfo  func() ([]cpu.InfoStat, error)
 	now       func() time.Time
+
+	// lhm supplies the temperature, which is unreachable without it.
+	lhm *lhmSource
 
 	discovered bool
 	name       string
@@ -41,6 +44,7 @@ func newWindowsCPUProvider() *windowsCPUProvider {
 		readTimes: aggregateCPUTimes,
 		readInfo:  cpu.Info,
 		now:       time.Now,
+		lhm:       defaultLHMSource,
 	}
 }
 
@@ -98,9 +102,29 @@ func (p *windowsCPUProvider) Collect(state *CollectorState) map[string]interface
 		result["frequency"] = *p.frequency
 	}
 
-	// No temperature key: see the type comment. An absent field renders as
-	// "unavailable" in themes, whereas a zero renders as a real 0 °C reading.
+	// An absent temperature renders as "unavailable" in themes, whereas a zero
+	// renders as a real 0 °C reading, so the key is omitted when the bridge is
+	// not running or the driver cannot see the sensor.
+	if temperature := p.temperature(); temperature != nil {
+		result["temperature"] = *temperature
+	}
+
 	return result
+}
+
+// Configure applies the given config to the provider. The bridge URL is shared
+// with the motherboard provider, which is where the option is documented.
+func (p *windowsCPUProvider) Configure(config *Config) {
+	p.lhm.configure(config)
+}
+
+// temperature reads the CPU temperature from the LibreHardwareMonitor bridge.
+func (p *windowsCPUProvider) temperature() *float64 {
+	reading, err := p.lhm.read()
+	if err != nil {
+		return nil
+	}
+	return reading.CPUTemperature
 }
 
 // collectLoad turns the monotonic time counters into a percentage using the

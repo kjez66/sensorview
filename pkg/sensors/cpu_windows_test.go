@@ -28,6 +28,7 @@ func testCPUProvider() *windowsCPUProvider {
 	p := newWindowsCPUProvider()
 	p.readTimes = fixedTimes(30, 10, 60)
 	p.readInfo = fixedInfo("Test CPU", 3600)
+	p.lhm = offlineLHMSource()
 	return p
 }
 
@@ -145,8 +146,8 @@ func TestWindowsCPUOmitsTemperature(t *testing.T) {
 	p := testCPUProvider()
 	data := p.Collect(NewCollectorState())
 
-	// Windows temperatures need a kernel driver bridge; reporting a zero here
-	// would render as a real 0 °C reading in themes.
+	// Without the LibreHardwareMonitor bridge there is no way to read a CPU
+	// temperature on Windows. Reporting a zero would render as a real 0 °C.
 	if _, ok := data["temperature"]; ok {
 		t.Error("temperature reported on Windows, want the field omitted entirely")
 	}
@@ -217,5 +218,48 @@ func TestWindowsCPUMetaMatchesLinuxFieldContract(t *testing.T) {
 		if fields[i].JSONName != name {
 			t.Errorf("field %d = %q, want %q", i, fields[i].JSONName, name)
 		}
+	}
+}
+
+func TestWindowsCPUReportsTemperatureFromLHM(t *testing.T) {
+	source, _ := newFixtureSource(t, intelTree)
+	p := testCPUProvider()
+	p.lhm = source
+
+	data := p.Collect(NewCollectorState())
+
+	if got := data["temperature"]; got != float64(44) {
+		t.Errorf("temperature = %v, want 44 from the LibreHardwareMonitor bridge", got)
+	}
+}
+
+func TestWindowsCPUOmitsTemperatureWhenLHMReportsNone(t *testing.T) {
+	// LHM reachable but with no CPU temperature, which is what a machine
+	// without PawnIO installed looks like: GPU temperatures present, CPU
+	// temperatures absent from the tree entirely.
+	source, _ := newFixtureSource(t, dimmTree)
+	p := testCPUProvider()
+	p.lhm = source
+
+	data := p.Collect(NewCollectorState())
+
+	if _, ok := data["temperature"]; ok {
+		t.Errorf("temperature present as %v, want the key omitted", data["temperature"])
+	}
+}
+
+func TestWindowsCPUStillCollectsWhenLHMIsDown(t *testing.T) {
+	// The bridge is an enhancement, never a dependency: load must survive it.
+	state := NewCollectorState()
+	p := testCPUProvider()
+	p.Collect(state)
+	p.readTimes = fixedTimes(70, 20, 110)
+	data := p.Collect(state)
+
+	if data == nil {
+		t.Fatal("Collect = nil with LHM unreachable, want the ordinary CPU data")
+	}
+	if got := data["load"].(float64); got != 50 {
+		t.Errorf("load = %v, want 50", got)
 	}
 }
