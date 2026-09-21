@@ -1,57 +1,93 @@
-# SensorPanel
+# SensorView
 
-[![CI](https://github.com/oae/sensorpanel/actions/workflows/ci.yml/badge.svg)](https://github.com/oae/sensorpanel/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/oae/sensorpanel)](https://goreportcard.com/report/github.com/oae/sensorpanel)
+[![CI](https://github.com/kjez66/sensorview/actions/workflows/ci.yml/badge.svg)](https://github.com/kjez66/sensorview/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kjez66/sensorview)](https://goreportcard.com/report/github.com/kjez66/sensorview)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A cross-platform CLI tool for driving USB LCD displays as real-time system monitoring dashboards.
+Turn the old tablet or phone in your drawer into a real-time system monitor.
+
+SensorView runs on your PC, reads its sensors, and serves a live dashboard over
+your local network. The second screen is any device with a browser - an ageing
+iPad, a retired Android phone, a spare laptop - propped up next to your desk.
+Nothing to install on that device, and no dedicated hardware to buy.
+
+> Derived from [oae/sensorpanel](https://github.com/oae/sensorpanel), which
+> targets cheap AX206 USB LCD panels. Those panels still work here (see
+> [Supported Devices](#supported-devices)), but they are no longer the point:
+> SensorView is built around screens you already own, reached over the network.
 
 ![Dashboard Example](docs/dashboard-preview.png)
 
 ## Features
 
-- **Multi-device support** - Modular device profiles for different USB displays
-- **Easy device contribution** - Interactive wizard to add support for new panels
+- **Any browser is the panel** - Serve a theme to a phone, tablet or second machine on your network; no app, no USB display
+- **One-port serving** - `sensorview serve` ships the built theme and its sensor WebSocket from a single address
+- **Interface-aware startup** - Prints every reachable address with its adapter name, so VPN and Hyper-V addresses are easy to skip
 - **Real-time monitoring** - CPU, GPU (NVIDIA/AMD), RAM, disk, and network stats
-- **Media display modes** - Static images, animated GIFs, and a now-playing dashboard
-- **Music dashboard** - Cover art, song metadata, progress waveform, and synchronized lyrics
-- **Regional USB updates** - Sends only changed rectangles when the panel protocol supports it
-- **Dynamic sensor config** - Enable/disable sensors and configure options at runtime
-- **Theme renderer selection** - Use Chrome-rendered web themes or low-overhead native JSON themes
-- **Local Management Studio** - Visually arrange sensors, charts, images, fonts, and cropped video backgrounds
+- **Windows sensors** - Load, memory, network and NVIDIA GPU natively; temperatures and fans via LibreHardwareMonitor
 - **Web-based themes** - Create custom themes using React + TypeScript
 - **TypeScript SDK** - React hooks for easy theme development with hot reload
-- **Single-command dev** - One command starts everything for theme development
-- **Headless rendering** - Auto-downloads Chrome for Testing to render themes
-- **Browser as panel** - Serve a theme to a phone or tablet on your network, no USB display needed
-- **Windows sensors** - Load, memory, network and NVIDIA GPU natively; temperatures and fans via LibreHardwareMonitor
+- **Single-command dev** - One command starts everything for theme development, bound to your LAN
+- **Local Management Studio** - Visually arrange sensors, charts, images, fonts, and cropped video backgrounds
+- **Theme renderer selection** - Use Chrome-rendered web themes or low-overhead native JSON themes
+- **Media display modes** - Static images, animated GIFs, and a now-playing dashboard
+- **Music dashboard** - Cover art, song metadata, progress waveform, and synchronized lyrics
+- **Dynamic sensor config** - Enable/disable sensors and configure options at runtime
 - **Cross-platform** - Runs on Linux, macOS and Windows; sensor coverage varies, see [Built-in Sensors](#built-in-sensors)
 - **Autostart service** - Install as system service on all platforms
 - **NixOS support** - Flake with module, udev rules, and systemd service
+- **USB panels too** - Inherited AX206 device profiles, regional updates, and an interactive wizard for new panels
 
 ## Quick Start
 
-### Prerequisites
+### Requirements
 
-Go 1.24 or newer, plus a C toolchain and libusb: USB panel support goes through
-cgo. Without them the build fails inside `gousb` with a list of `undefined:`
-errors, which looks like a broken checkout but is a missing toolchain.
+**To run the dashboard on a tablet or phone you need:**
+
+| | |
+|---|---|
+| Host machine | Linux, macOS or Windows - this is where SensorView runs |
+| Display device | Anything with a modern browser, on the same network. No app install |
+| Network | Host and device on the same LAN; the host's inbound port must not be firewalled |
+
+**To build SensorView you need:**
+
+- **Go 1.24 or newer**
+- **A C toolchain and libusb.** These are required even if you never touch a USB
+  panel: the USB device-discovery code is compiled into the binary
+  unconditionally, so without them the build fails inside `gousb` with a list of
+  `undefined:` errors. That looks like a broken checkout but is a missing
+  toolchain.
+- **libturbojpeg** (Linux) for fast JPEG encoding.
 
 ```bash
 # Debian/Ubuntu
-sudo apt-get install -y libusb-1.0-0-dev libturbojpeg0-dev
+sudo apt-get install -y build-essential libusb-1.0-0-dev libturbojpeg0-dev
+
+# Fedora
+sudo dnf install -y gcc libusbx-devel turbojpeg-devel
+
+# Arch
+sudo pacman -S --needed base-devel libusb libjpeg-turbo
 
 # macOS
+xcode-select --install
 brew install libusb pkg-config
 ```
 
-On Windows you need a gcc toolchain (mingw-w64, for example via MSYS2 or scoop)
-and libusb. CI uses vcpkg:
+On Windows you need a gcc toolchain - cgo does not support MSVC - plus libusb.
+CI uses vcpkg:
 
-```cmd
+```powershell
+# gcc, via scoop (or install MSYS2 and use its mingw-w64 toolchain)
+scoop install mingw
+
+# libusb, via vcpkg
 vcpkg integrate install
 vcpkg install libusb:x64-windows
 ```
+
+Then, in the shell you build from:
 
 ```powershell
 $env:CGO_ENABLED = "1"
@@ -59,9 +95,19 @@ $env:CGO_CFLAGS  = "-IC:/vcpkg/installed/x64-windows/include/libusb-1.0"
 $env:CGO_LDFLAGS = "-LC:/vcpkg/installed/x64-windows/lib -lusb-1.0"
 ```
 
-The sensor, theme and server packages need none of this, so
+**Optional:**
+
+- **Node.js 18+** - only for developing themes (`sensorview theme dev`). Running a
+  prebuilt theme does not need it.
+- **Chrome** - downloaded automatically for the headless renderer. Native themes
+  (`--renderer native`) skip it entirely.
+- **[LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)**
+  (Windows) - needed for CPU/motherboard temperatures, fan speeds and voltages.
+  See [Windows: temperatures, fans and voltages](#windows-temperatures-fans-and-voltages).
+
+The sensor, theme and server packages need no cgo at all, so
 `go test ./pkg/sensors/... ./pkg/theme/... ./pkg/display/...` works on a bare
-checkout. Only the binary itself needs libusb.
+checkout. Only building the binary needs libusb.
 
 ### 1. Build
 
@@ -79,63 +125,92 @@ go build .
 nix build
 ```
 
-### 2. Select your display
+### 2. Put it on your tablet or phone
+
+Build a theme, then serve it on every interface so other devices can reach it:
 
 ```bash
-./sensorpanel device list     # See available devices
-./sensorpanel device select   # Interactive selection
+./sensorview theme build trofeo
+./sensorview serve trofeo --addr 0.0.0.0:19847
 ```
 
-### 3. Run the dashboard
+Each reachable address is printed with the adapter it belongs to, which matters
+on a machine with VPN or virtual-switch adapters:
+
+```
+Serving theme: trofeo
+[serve] Local:     http://localhost:19847/?ws=19847
+[serve] Phone/LAN: http://192.168.1.50:19847/?ws=19847  (Ethernet)
+```
+
+Open the `Phone/LAN` address in the browser on your tablet, add it to the home
+screen for a full-screen view, and you are done. On Windows the first run may
+need an inbound firewall rule for the port.
+
+> **The sensor feed has no authentication.** Anyone who can reach that port can
+> read your system metrics. The default (`127.0.0.1:19847`) binds loopback only;
+> widen it only on a network you trust.
+
+### 3. (Optional) Drive a USB panel instead
+
+Inherited from the upstream project, and still fully supported:
 
 ```bash
+./sensorview device list     # See available devices
+./sensorview device select   # Interactive selection
+
 # With built-in renderer
-./sensorpanel run
+./sensorview run
 
 # Play an animated GIF instead of sensor data
-./sensorpanel run --gif /path/to/animation.gif
+./sensorview run --gif /path/to/animation.gif
 
 # URLs are also supported
-./sensorpanel run --gif https://media.tenor.com/j8dwT9wdyc8AAAAi/evernight-anime.gif
+./sensorview run --gif https://media.tenor.com/j8dwT9wdyc8AAAAi/evernight-anime.gif
 
 # Display a static PNG, JPEG, or GIF from a file or URL
-./sensorpanel run --image /path/to/wallpaper.png
+./sensorview run --image /path/to/wallpaper.png
 
 # Display the active song with artwork, progress waveform, and synchronized lyrics
-./sensorpanel run --music
+./sensorview run --music
 
 # With sensor options
-./sensorpanel run --opt disk.mounts=/,/home --opt network.interface=eth*
+./sensorview run --opt disk.mounts=/,/home --opt network.interface=eth*
 
 # Or create and use a custom theme
-./sensorpanel theme create my-theme
-./sensorpanel theme select my-theme
-./sensorpanel run
+./sensorview theme create my-theme
+./sensorview theme select my-theme
+./sensorview run
 
 # Force a renderer for the selected theme
-./sensorpanel run --renderer native   # Native Go renderer, no Chrome
-./sensorpanel run --renderer chrome   # Headless Chrome renderer
+./sensorview run --renderer native   # Native Go renderer, no Chrome
+./sensorview run --renderer chrome   # Headless Chrome renderer
 
 # While the native dashboard is running, open its local visual editor
-./sensorpanel ui
+./sensorview ui
 ```
 
 ### 4. (Optional) Install as autostart service
 
 ```bash
 # Install to start on login
-./sensorpanel service install --opt disk.mounts=/
+./sensorview service install --opt disk.mounts=/
 
 # Start now
-./sensorpanel service start
+./sensorview service start
 
 # Check status
-./sensorpanel service status
+./sensorview service status
 ```
 
 ## Supported Devices
 
-SensorPanel uses a modular device profile system. Currently supported:
+The primary "device" is any browser on your network - see
+[Serve a Theme to a Browser](#serve-a-theme-to-a-browser). No profile needed.
+
+For USB LCD panels, SensorView keeps the modular device profile system it
+inherited from [oae/sensorpanel](https://github.com/oae/sensorpanel). Currently
+supported:
 
 | Device | Resolution | Color Format | Notes |
 |--------|------------|--------------|-------|
@@ -143,14 +218,14 @@ SensorPanel uses a modular device profile system. Currently supported:
 | Thermalright Trofeo Vision 9.16 LCD | 1920x462 | RGB888 → JPEG | USB high-speed LY bulk protocol, VID:PID 0416:5408 |
 | Generic AX206-based frames | Various | RGB565 | GEMBIRD, Pearl, Coby, etc. |
 
-**Don't see your device?** Run `sensorpanel device create` to add support for it!
+**Don't see your device?** Run `sensorview device create` to add support for it!
 
 ## Commands
 
 ### Run Dashboard
 
 ```bash
-sensorpanel run [flags]
+sensorview run [flags]
 
 Flags:
   -i, --interval float    Update interval in seconds (default 1.0)
@@ -183,7 +258,7 @@ headless Chrome: the built theme and its sensor WebSocket are served from one
 port.
 
 ```bash
-sensorpanel serve [name] [flags]
+sensorview serve [name] [flags]
 
 Flags:
       --addr string        Address to listen on (default 127.0.0.1:19847)
@@ -194,8 +269,8 @@ Flags:
 Build the theme first, then serve it:
 
 ```bash
-sensorpanel theme build trofeo
-sensorpanel serve trofeo
+sensorview theme build trofeo
+sensorview serve trofeo
 ```
 
 To use a phone or tablet as the panel, bind every interface. The addresses to
@@ -203,7 +278,7 @@ open are printed on startup, each labelled with its network interface, which
 matters on a machine with VPN or Hyper-V adapters:
 
 ```bash
-sensorpanel serve trofeo --addr 0.0.0.0:19847
+sensorview serve trofeo --addr 0.0.0.0:19847
 ```
 
 ```
@@ -226,8 +301,8 @@ Native themes can be created and edited without writing JSON. Start a native
 dashboard and open the embedded, localhost-only editor:
 
 ```bash
-sensorpanel run --renderer native
-sensorpanel ui
+sensorview run --renderer native
+sensorview ui
 ```
 
 The Studio provides a fixed-pixel free canvas, live sensor bindings, bars,
@@ -262,10 +337,10 @@ Configure sensor behavior with `--opt` flags or in config.json:
 
 ```bash
 # Show available sensor options
-sensorpanel sensor opts
+sensorview sensor opts
 
 # Examples
-sensorpanel run --opt disk.mounts=/,/home --opt network.interface=eth*
+sensorview run --opt disk.mounts=/,/home --opt network.interface=eth*
 ```
 
 | Option | Type | Description |
@@ -277,67 +352,67 @@ sensorpanel run --opt disk.mounts=/,/home --opt network.interface=eth*
 ### Device Management
 
 ```bash
-sensorpanel device list      # List connected USB displays
-sensorpanel device select    # Interactive device selection
-sensorpanel device info      # Show current device and profile info
-sensorpanel device create    # Generate code for new device support
-sensorpanel device reset     # Reset to defaults
+sensorview device list      # List connected USB displays
+sensorview device select    # Interactive device selection
+sensorview device info      # Show current device and profile info
+sensorview device create    # Generate code for new device support
+sensorview device reset     # Reset to defaults
 ```
 
 ### Theme Management
 
 ```bash
-sensorpanel theme list              # List installed themes
-sensorpanel theme create <name>     # Create from React+TypeScript template
-sensorpanel theme select <name>     # Set active theme
-sensorpanel theme dev [name]        # Start dev server with hot reload
-sensorpanel theme build [name]      # Build theme for production
-sensorpanel theme preview [name]    # Open in browser
-sensorpanel theme delete <name>     # Remove theme
-sensorpanel theme path              # Show themes directory
-sensorpanel theme sdk update [name] # Update SDK in existing theme
-sensorpanel theme browser install   # Download Chrome for Testing
-sensorpanel theme browser status    # Check browser availability
-sensorpanel theme browser remove    # Remove cached browser
-sensorpanel ui                      # Open the running native Management Studio
+sensorview theme list              # List installed themes
+sensorview theme create <name>     # Create from React+TypeScript template
+sensorview theme select <name>     # Set active theme
+sensorview theme dev [name]        # Start dev server with hot reload
+sensorview theme build [name]      # Build theme for production
+sensorview theme preview [name]    # Open in browser
+sensorview theme delete <name>     # Remove theme
+sensorview theme path              # Show themes directory
+sensorview theme sdk update [name] # Update SDK in existing theme
+sensorview theme browser install   # Download Chrome for Testing
+sensorview theme browser status    # Check browser availability
+sensorview theme browser remove    # Remove cached browser
+sensorview ui                      # Open the running native Management Studio
 ```
 
 ### Panel Control
 
 ```bash
-sensorpanel panel status       # Check if panel is connected
-sensorpanel panel test         # Display test pattern
-sensorpanel panel on           # Turn backlight on
-sensorpanel panel off          # Turn backlight off
-sensorpanel panel brightness 5 # Set brightness (0-7)
+sensorview panel status       # Check if panel is connected
+sensorview panel test         # Display test pattern
+sensorview panel on           # Turn backlight on
+sensorview panel off          # Turn backlight off
+sensorview panel brightness 5 # Set brightness (0-7)
 ```
 
 ### Sensor Management
 
 ```bash
-sensorpanel sensor list              # List all registered sensors
-sensorpanel sensor list -a           # List only available sensors on this system
-sensorpanel sensor opts              # List available sensor options
-sensorpanel sensor types             # Generate TypeScript types for all sensors
-sensorpanel sensor types -o types.ts # Output to file
-sensorpanel sensor create            # Interactive wizard to create a new sensor
+sensorview sensor list              # List all registered sensors
+sensorview sensor list -a           # List only available sensors on this system
+sensorview sensor opts              # List available sensor options
+sensorview sensor types             # Generate TypeScript types for all sensors
+sensorview sensor types -o types.ts # Output to file
+sensorview sensor create            # Interactive wizard to create a new sensor
 ```
 
 ### Service Management (Autostart)
 
 ```bash
-sensorpanel service install          # Install as autostart service
-sensorpanel service install --opt disk.mounts=/  # With sensor options
-sensorpanel service install --music  # Start in now-playing mode
-sensorpanel service install --gif https://example.com/animation.gif
-sensorpanel service install --image /path/to/wallpaper.png
-sensorpanel service install --renderer native --orientation 90
-sensorpanel service uninstall        # Remove autostart service
-sensorpanel service start            # Start the service now
-sensorpanel service stop             # Stop the service
-sensorpanel service status           # Show service status
-sensorpanel service logs             # View service logs
-sensorpanel service logs -f          # Follow logs in real-time
+sensorview service install          # Install as autostart service
+sensorview service install --opt disk.mounts=/  # With sensor options
+sensorview service install --music  # Start in now-playing mode
+sensorview service install --gif https://example.com/animation.gif
+sensorview service install --image /path/to/wallpaper.png
+sensorview service install --renderer native --orientation 90
+sensorview service uninstall        # Remove autostart service
+sensorview service start            # Start the service now
+sensorview service stop             # Stop the service
+sensorview service status           # Show service status
+sensorview service logs             # View service logs
+sensorview service logs -f          # Follow logs in real-time
 ```
 
 Cross-platform support:
@@ -351,24 +426,24 @@ start the service afterward to apply the new command line.
 ### Other Commands
 
 ```bash
-sensorpanel benchmark                                      # Measure full-frame FPS
-sensorpanel benchmark --region-width 64 --region-height 32 # Measure regional FPS
-sensorpanel benchmark --animation --target-fps 60          # Test moving regional updates
-sensorpanel benchmark --native-theme trofeo --orientation 90 --duration 30s # Measure actual Trofeo theme FPS
-sensorpanel benchmark --native-theme trofeo --orientation 90 --mode idle --duration 60s
-sensorpanel benchmark --native-theme trofeo --orientation 90 --json
-sensorpanel benchmark --native-theme trofeo --cpu-profile /tmp/sensorpanel.cpu
-sensorpanel prune              # Remove config and cache (keeps themes)
-sensorpanel prune --all        # Also remove themes
+sensorview benchmark                                      # Measure full-frame FPS
+sensorview benchmark --region-width 64 --region-height 32 # Measure regional FPS
+sensorview benchmark --animation --target-fps 60          # Test moving regional updates
+sensorview benchmark --native-theme trofeo --orientation 90 --duration 30s # Measure actual Trofeo theme FPS
+sensorview benchmark --native-theme trofeo --orientation 90 --mode idle --duration 60s
+sensorview benchmark --native-theme trofeo --orientation 90 --json
+sensorview benchmark --native-theme trofeo --cpu-profile /tmp/sensorview.cpu
+sensorview prune              # Remove config and cache (keeps themes)
+sensorview prune --all        # Also remove themes
 ```
 
 ### Rendering performance
 
-SensorPanel automatically uses regional updates for run modes when the selected
+SensorView automatically uses regional updates for run modes when the selected
 USB display supports rectangular writes. The first frame is sent as a full
 frame. Later frames are compared against the previous RGB565 buffer, unchanged
 frames are skipped, and changed pixels are grouped into cost-aware rectangular
-updates. If a regional write fails, SensorPanel falls back to full-frame writes.
+updates. If a regional write fails, SensorView falls back to full-frame writes.
 
 Regional updates help most when the layout is mostly static and only small
 areas change, such as numeric sensor values, playback progress, or a clock.
@@ -379,25 +454,25 @@ The benchmark command can measure the real device instead of relying on theory:
 
 ```bash
 # Full-frame transfer speed
-sensorpanel benchmark
+sensorview benchmark
 
 # Raw rectangular write speed for a centered 64x32 area
-sensorpanel benchmark --region-width 64 --region-height 32 --frames 100
+sensorview benchmark --region-width 64 --region-height 32 --frames 100
 
 # End-to-end dirty-region animation test
-sensorpanel benchmark --animation --region-width 64 --region-height 32 --target-fps 60
+sensorview benchmark --animation --region-width 64 --region-height 32 --target-fps 60
 ```
 
 On USB full-speed panels such as the QTKeJi/AIDA64 480×320 display, small
 regions can update much faster than full frames, but large full-screen changes
 are still limited by USB bandwidth and the panel's update behavior.
 
-Thermalright Trofeo Vision 9.16 LCD devices use a different path: SensorPanel
+Thermalright Trofeo Vision 9.16 LCD devices use a different path: SensorView
 renders a 1920×462 framebuffer, JPEG-encodes it, and sends it over the LY bulk
 protocol as a full frame. This panel does not support regional RGB565 updates,
 so pixel-diff rendering cannot reduce work while a full-screen video is active.
 The native path uses a wire-oriented framebuffer: source JPEGs are rotated once
-into the SensorPanel cache (losslessly in TurboJPEG builds), decoded directly
+into the SensorView cache (losslessly in TurboJPEG builds), decoded directly
 into a reusable physical canvas, and overlaid without rotating the complete
 frame again.
 Compressed source frames, decoded buffers, JPEG encoder state, LY packets, and
@@ -409,10 +484,10 @@ a native JSON theme. The default `auto` renderer selects native mode to avoid
 running Chrome:
 
 ```bash
-sensorpanel theme select trofeo
-sensorpanel run --orientation 90 --renderer native
+sensorview theme select trofeo
+sensorview run --orientation 90 --renderer native
 # Balanced video profile is 8 FPS; temporary overrides are available:
-sensorpanel run --orientation 90 --renderer native --target-fps 12 --jpeg-quality 80
+sensorview run --orientation 90 --renderer native --target-fps 12 --jpeg-quality 80
 ```
 
 The included `caelestia` theme can follow Caelestia Shell's current Material
@@ -451,7 +526,7 @@ are cached. NVIDIA data uses NVML directly when available and starts
 On Arch Linux, install `libjpeg-turbo` and build the accelerated binary with:
 
 ```bash
-go build -tags turbojpeg -o sensorpanel .
+go build -tags turbojpeg -o sensorview .
 ```
 
 The physical benchmark reports process CPU, delivered FPS, heap use, and
@@ -465,7 +540,7 @@ Got a USB display that isn't supported yet? Adding support is easy:
 
 ```bash
 # Run the interactive wizard
-./sensorpanel device create
+./sensorview device create
 ```
 
 This prompts you for:
@@ -481,7 +556,7 @@ See [docs/adding-devices.md](docs/adding-devices.md) for detailed protocol resea
 
 ## Adding Custom Sensors
 
-SensorPanel uses a modular sensor provider system. Each sensor is a Go provider that implements the `sensors.Provider` interface.
+SensorView uses a modular sensor provider system. Each sensor is a Go provider that implements the `sensors.Provider` interface.
 
 ### Built-in Sensors
 
@@ -506,7 +581,7 @@ Go bindings, and the Go bindings that do exist target ROCm and therefore Linux.
 ### Windows: temperatures, fans and voltages
 
 Reading these needs MSR and super I/O access through a signed kernel driver, so
-SensorPanel bridges to [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
+SensorView bridges to [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
 rather than shipping a driver of its own:
 
 1. Install and run LibreHardwareMonitor.
@@ -518,7 +593,7 @@ rather than shipping a driver of its own:
 The bridge is then detected automatically. Point it elsewhere if needed:
 
 ```bash
-sensorpanel run --opt lhm.url=http://localhost:8085/data.json
+sensorview run --opt lhm.url=http://localhost:8085/data.json
 ```
 
 Sensors LHM does not report are left absent rather than zeroed, so a missing
@@ -533,7 +608,7 @@ them to LHM at all.
 
 ```bash
 # Run the interactive wizard
-./sensorpanel sensor create
+./sensorview sensor create
 ```
 
 This prompts you for:
@@ -549,7 +624,7 @@ It generates a skeleton Go file in `pkg/sensors/` that you can customize.
 If a sensor already exists but only for certain platforms, running `sensor create` with the same ID will prompt you to add an implementation for a different platform:
 
 ```bash
-./sensorpanel sensor create
+./sensorview sensor create
 Sensor ID: cpu
 Sensor 'cpu' already exists for platforms: linux, windows
 Which platform would you like to add?
@@ -567,7 +642,7 @@ generated TypeScript differs depending on where it was generated.
 After adding or modifying sensors, regenerate the TypeScript types for themes:
 
 ```bash
-./sensorpanel sensor types -o path/to/theme/lib/sensorpanel/types.ts
+./sensorview sensor types -o path/to/theme/lib/sensorview/types.ts
 ```
 
 ## Theme Development
@@ -577,17 +652,17 @@ Themes are React + TypeScript applications that receive sensor data via WebSocke
 ### Create a theme
 
 ```bash
-sensorpanel theme create my-theme
+sensorview theme create my-theme
 ```
 
 ### Development workflow (single command!)
 
 ```bash
 # Start everything with one command:
-sensorpanel theme dev my-theme
+sensorview theme dev my-theme
 
 # With sensor options:
-sensorpanel theme dev my-theme --opt disk.mounts=/ --opt network.interface=eth*
+sensorview theme dev my-theme --opt disk.mounts=/ --opt network.interface=eth*
 
 # This automatically:
 # - Detects your package manager (npm/yarn/pnpm/bun)
@@ -614,7 +689,7 @@ Open one of the `Phone/LAN` addresses above on the device. Two things to know:
   DNS-rebinding protection, and IP literals are always allowed.
 - Windows may need an inbound firewall rule for ports 15173 and 19847.
 
-For a panel you leave running, prefer [`sensorpanel serve`](#serve-a-theme-to-a-browser)
+For a panel you leave running, prefer [`sensorview serve`](#serve-a-theme-to-a-browser)
 over `theme dev`: it serves the built theme from the single binary, with no Node
 process alive.
 
@@ -624,7 +699,7 @@ at the device's resolution or scale the root element with a CSS `transform`.
 ### Using the SDK
 
 ```tsx
-import { useSensorData, useConnectionStatus, formatRate } from "../lib/sensorpanel";
+import { useSensorData, useConnectionStatus, formatRate } from "../lib/sensorview";
 
 function App() {
   const data = useSensorData();
@@ -647,9 +722,9 @@ function App() {
 ### Build and use
 
 ```bash
-sensorpanel theme build my-theme
-sensorpanel theme select my-theme
-sensorpanel run
+sensorview theme build my-theme
+sensorview theme select my-theme
+sensorview run
 ```
 
 See [docs/creating-themes.md](docs/creating-themes.md) for the full guide.
@@ -662,17 +737,17 @@ See [docs/creating-themes.md](docs/creating-themes.md) for the full guide.
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    sensorpanel.url = "github:alperen/sensorpanel";
+    sensorview.url = "github:alperen/sensorview";
   };
 
-  outputs = { self, nixpkgs, sensorpanel, ... }: {
+  outputs = { self, nixpkgs, sensorview, ... }: {
     nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
         ./configuration.nix
-        sensorpanel.nixosModules.default
+        sensorview.nixosModules.default
         {
-          services.sensorpanel = {
+          services.sensorview = {
             enable = true;
             interval = 1.0;
             brightness = 7;
@@ -688,7 +763,7 @@ See [docs/creating-themes.md](docs/creating-themes.md) for the full guide.
 ### Module options
 
 ```nix
-services.sensorpanel = {
+services.sensorview = {
   enable = true;
   interval = 1.0;        # Update interval in seconds
   brightness = 7;        # Backlight brightness (0-7)
@@ -698,8 +773,8 @@ services.sensorpanel = {
     "disk.mounts" = [ "/" "/home" ];
     "network.interface" = "eth*";
   };
-  user = "sensorpanel";  # Service user
-  group = "sensorpanel"; # Service group (for USB access)
+  user = "sensorview";  # Service user
+  group = "sensorview"; # Service group (for USB access)
 };
 ```
 
@@ -707,9 +782,20 @@ services.sensorpanel = {
 
 | Type | Path |
 |------|------|
-| Config | `~/.config/sensorpanel/config.json` |
-| Themes | `~/.local/share/sensorpanel/themes/` |
-| Browser cache | `~/.cache/sensorpanel/browser/` |
+| Config | `~/.config/sensorview/config.json` |
+| Themes | `~/.local/share/sensorview/themes/` |
+| Browser cache | `~/.cache/sensorview/browser/` |
+
+On macOS these live under `~/Library/Application Support/sensorview/` and
+`~/Library/Caches/sensorview/`; on Windows under `%APPDATA%sensorview` and
+`%LOCALAPPDATA%sensorview`.
+
+**Upgrading from SensorPanel?** The first run of any `sensorview` command moves
+the old `sensorpanel` directories to their `sensorview` equivalents, so your
+device selection, themes and browser cache carry over. A directory is only moved
+when the new one does not already exist, so nothing is ever overwritten. An
+installed autostart service is *not* migrated - run `sensorview service install`
+again after uninstalling the old one.
 
 ## Architecture
 
@@ -753,11 +839,11 @@ type DeviceProfile interface {
 # List USB devices
 lsusb
 
-# Check if sensorpanel detects it
-./sensorpanel device list
+# Check if sensorview detects it
+./sensorview device list
 ```
 
-If your device shows in `lsusb` but not in sensorpanel, it may need a new device profile. Run `sensorpanel device create` to add support.
+If your device shows in `lsusb` but not in sensorview, it may need a new device profile. Run `sensorview device create` to add support.
 
 ### Permission denied
 
@@ -765,7 +851,7 @@ Create a udev rule for your device:
 
 ```bash
 # Replace XXXX and YYYY with your device's VID and PID
-sudo tee /etc/udev/rules.d/99-sensorpanel.rules << EOF
+sudo tee /etc/udev/rules.d/99-sensorview.rules << EOF
 SUBSYSTEM=="usb", ATTR{idVendor}=="XXXX", ATTR{idProduct}=="YYYY", MODE="0666"
 EOF
 
@@ -779,13 +865,13 @@ On NixOS with the module, udev rules are set up automatically for known devices.
 
 ```bash
 # Check if browser is installed
-sensorpanel theme browser status
+sensorview theme browser status
 
 # Install browser if needed
-sensorpanel theme browser install
+sensorview theme browser install
 
 # Check theme is built
-ls ~/.local/share/sensorpanel/themes/my-theme/dist/
+ls ~/.local/share/sensorview/themes/my-theme/dist/
 ```
 
 ### No GPU stats
@@ -800,7 +886,7 @@ ls /sys/class/drm/card*/device/gpu_busy_percent
 
 ## Development with Mage
 
-SensorPanel uses [Mage](https://magefile.org/) as its build tool. Install it with:
+SensorView uses [Mage](https://magefile.org/) as its build tool. Install it with:
 
 ```bash
 go install github.com/magefile/mage@latest
@@ -825,7 +911,7 @@ mage devTheme        # Build and start theme dev mode
 
 ## Testing
 
-SensorPanel has comprehensive unit tests with good coverage across all core packages.
+SensorView has comprehensive unit tests with good coverage across all core packages.
 
 ### Running Tests
 
@@ -865,11 +951,21 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ### Ways to contribute
 
-- **Add device support** - Run `sensorpanel device create` and submit a PR
+- **Add device support** - Run `sensorview device create` and submit a PR
 - **Create themes** - Share your themes with the community
 - **Improve docs** - Help others get started
 - **Fix bugs** - Check the issue tracker
 
+## Credits
+
+SensorView is a fork of [oae/sensorpanel](https://github.com/oae/sensorpanel).
+The USB panel protocols, device profile system, theme pipeline and sensor
+architecture all originate there. This fork redirects the
+project at network-attached screens - old tablets and phones - and adds the
+native renderer, management studio, adaptive power mode and Windows sensor
+support on top.
+
 ## License
 
-MIT License - See LICENSE file for details.
+MIT License - See LICENSE file for details. Upstream code remains under its
+original MIT license.
