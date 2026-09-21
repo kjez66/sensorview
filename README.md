@@ -958,12 +958,12 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ## Credits
 
-SensorView is a fork of [oae/sensorpanel](https://github.com/oae/sensorpanel).
-The USB panel protocols, device profile system, theme pipeline and sensor
-architecture all originate there. This fork redirects the
-project at network-attached screens - old tablets and phones - and adds the
-native renderer, management studio, adaptive power mode and Windows sensor
-support on top.
+SensorView is a fork of [oae/sensorpanel](https://github.com/oae/sensorpanel)
+by Osman Alperen Elhan, who wrote most of the code in this tree. The USB panel
+protocols, device profile system, theme pipeline, sensor architecture, native
+renderer, management studio and the Caelestia theme all originate there. This
+fork redirects the project at network-attached screens - old tablets and phones
+- and adds Windows sensor support on top.
 
 ## License
 
