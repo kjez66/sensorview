@@ -1,6 +1,6 @@
 # Management Studio
 
-SensorPanel Studio is an embedded visual editor for native themes. It runs in
+SensorView Studio is an embedded visual editor for native themes. It runs in
 the same process as the USB render loop, previews through the native Go
 renderer, and applies a validated theme at a frame boundary without restarting
 the service.
@@ -10,8 +10,8 @@ the service.
 Select a theme with `native.theme.json`, then run:
 
 ```bash
-sensorpanel run --renderer native
-sensorpanel ui
+sensorview run --renderer native
+sensorview ui
 ```
 
 The default address is `http://127.0.0.1:19848`. The run process must remain
@@ -116,7 +116,7 @@ to preserve a known-good version.
 ## Resource behavior
 
 Animated backgrounds use the theme's active FPS while desktop input is
-detected. After `idle_timeout_seconds`, SensorPanel switches to the idle FPS,
+detected. After `idle_timeout_seconds`, SensorView switches to the idle FPS,
 removes video, and renders monochrome. Static scenes are capped to the sensor
 sampling rate automatically.
 
@@ -125,7 +125,7 @@ transfer because the firmware has no rectangular update command. TurboJPEG
 builds minimize encode/decode cost:
 
 ```bash
-go build -tags turbojpeg -o sensorpanel .
+go build -tags turbojpeg -o sensorview .
 ```
 
 See [Native renderer performance](performance.md) for benchmark and profiling

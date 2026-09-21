@@ -16,8 +16,8 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/oae/sensorpanel/pkg/lan"
-	"github.com/oae/sensorpanel/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/lan"
+	"github.com/kjez66/sensorview/pkg/sensors"
 )
 
 // DevServer orchestrates the theme development experience.

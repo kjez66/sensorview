@@ -347,12 +347,12 @@ function App() {
     }
   }
 
-  if (!ready) return <div className="boot"><div className="spinner" />{error || "Starting SensorPanel Studio…"}</div>;
+  if (!ready) return <div className="boot"><div className="spinner" />{error || "Starting SensorView Studio…"}</div>;
 
   return (
     <div className="app">
       <header>
-        <div className="brand"><span className="brand-mark">SP</span><div><b>SensorPanel</b><small>Management Studio</small></div></div>
+        <div className="brand"><span className="brand-mark">SP</span><div><b>SensorView</b><small>Management Studio</small></div></div>
         <div className="theme-title"><span className={connected ? "status-dot" : "offline"} title={connected ? "Live sensor stream connected" : "Reconnecting sensor stream"} /><select name="active-theme" value={activeTheme} onChange={event => switchTheme(event.target.value)}>{themeList.map(item => <option key={item.Name} value={item.Name}>{item.Name}</option>)}</select><button title="New blank theme" onClick={() => createTheme(false)}>＋</button><button title="Clone active theme" onClick={() => createTheme(true)}>⧉</button>{dirty && <em>Unsaved</em>}</div>
         <div className="toolbar">
           <button disabled={!history.undo} onClick={undo} title="Undo (Ctrl+Z)">↶</button>

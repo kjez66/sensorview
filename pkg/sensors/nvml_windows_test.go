@@ -149,7 +149,7 @@ func TestOptionalProcReturnsNilForMissingExport(t *testing.T) {
 		t.Skipf("kernel32.dll unavailable: %v", err)
 	}
 
-	if proc := optionalProc(dll, "SensorPanelNoSuchFunction"); proc != nil {
+	if proc := optionalProc(dll, "SensorViewNoSuchFunction"); proc != nil {
 		t.Fatalf("optionalProc = %v, want nil for an export that does not exist", proc)
 	}
 
@@ -177,7 +177,7 @@ func TestOptionalProcReturnsNilForMissingExport(t *testing.T) {
 
 func TestMissingLibraryIsNotUsable(t *testing.T) {
 	// The GPU-less case: the DLL simply is not there.
-	dll := windows.NewLazySystemDLL("sensorpanel-no-such-library.dll")
+	dll := windows.NewLazySystemDLL("sensorview-no-such-library.dll")
 	if err := dll.Load(); err == nil {
 		t.Fatal("loading a nonexistent DLL succeeded, want an error")
 	}

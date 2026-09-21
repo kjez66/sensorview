@@ -1,4 +1,4 @@
-import { useSensorData } from "../lib/sensorpanel";
+import { useSensorData } from "../lib/sensorview";
 import "./App.css";
 import { useEffect, useRef, useState } from "react";
 

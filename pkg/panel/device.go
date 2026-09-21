@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/google/gousb"
-	"github.com/oae/sensorpanel/pkg/device"
-	"github.com/oae/sensorpanel/pkg/jpegcodec"
+	"github.com/kjez66/sensorview/pkg/device"
+	"github.com/kjez66/sensorview/pkg/jpegcodec"
 )
 
 // Errors
@@ -25,7 +25,7 @@ var (
 	ErrReadIncomplete     = errors.New("USB read incomplete")
 	ErrPermissionDenied   = errors.New("permission denied")
 	ErrDeviceBusy         = errors.New("device busy")
-	ErrNoDeviceConfigured = errors.New("no device configured - run 'sensorpanel device select' first")
+	ErrNoDeviceConfigured = errors.New("no device configured - run 'sensorview device select' first")
 )
 
 // Device represents an AX206 USB display.
@@ -442,7 +442,7 @@ func PermissionFixInstructions(vid, pid uint16) string {
 	return fmt.Sprintf(`USB permission denied. To fix this:
 
 Linux (udev rules):
-  1. Create /etc/udev/rules.d/99-sensorpanel.rules with:
+  1. Create /etc/udev/rules.d/99-sensorview.rules with:
      SUBSYSTEM=="usb", ATTR{idVendor}=="%04x", ATTR{idProduct}=="%04x", MODE="0666"
   2. Reload rules: sudo udevadm control --reload-rules
   3. Reconnect the USB device
@@ -469,11 +469,11 @@ func DeviceBusyInstructions() string {
 
 To fix this:
   1. Close any other programs that might be using the USB display
-     (e.g., another instance of sensorpanel, AIDA64, etc.)
+     (e.g., another instance of sensorview, AIDA64, etc.)
   2. Try unplugging and reconnecting the USB device
   3. If on Linux, check if a kernel driver has claimed the device:
      lsusb -t
-     If so, the sensorpanel should auto-detach it, but you may need
+     If so, the sensorview should auto-detach it, but you may need
      to unload the driver manually: sudo modprobe -r usblp (example)`
 }
 

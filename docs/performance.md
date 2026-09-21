@@ -7,7 +7,7 @@ host must reduce work before the final full-frame transfer.
 
 ## Pipeline
 
-At theme load, SensorPanel rotates source JPEGs into the panel's physical
+At theme load, SensorView rotates source JPEGs into the panel's physical
 orientation and stores them in the application cache. TurboJPEG builds use a
 lossless DCT transform; the portable fallback performs a one-time high-quality
 re-encode. The cache key includes
@@ -42,10 +42,10 @@ screen.
 Stop any service that owns the USB panel, then run:
 
 ```bash
-sensorpanel benchmark --native-theme trofeo --orientation 90 \
+sensorview benchmark --native-theme trofeo --orientation 90 \
   --mode active --duration 30s
 
-sensorpanel benchmark --native-theme trofeo --orientation 90 \
+sensorview benchmark --native-theme trofeo --orientation 90 \
   --mode idle --duration 60s
 ```
 
@@ -57,11 +57,11 @@ encode, packetization, USB write, and ACK latency.
 For profiling:
 
 ```bash
-sensorpanel benchmark --native-theme trofeo --orientation 90 \
-  --duration 60s --cpu-profile /tmp/sensorpanel.cpu \
-  --heap-profile /tmp/sensorpanel.heap
+sensorview benchmark --native-theme trofeo --orientation 90 \
+  --duration 60s --cpu-profile /tmp/sensorview.cpu \
+  --heap-profile /tmp/sensorview.heap
 
-go tool pprof /path/to/sensorpanel /tmp/sensorpanel.cpu
+go tool pprof /path/to/sensorview /tmp/sensorview.cpu
 ```
 
 Run a benchmark twice after replacing the source animation. The first run may

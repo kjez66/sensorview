@@ -7,20 +7,20 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/oae/sensorpanel/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/paths"
 )
 
 var pruneCmd = &cobra.Command{
 	Use:   "prune",
 	Short: "Remove all configs, data, and cache",
-	Long: `Remove sensorpanel config and cache from your system.
+	Long: `Remove sensorview config and cache from your system.
 
 This will delete:
-  - Config:  ~/.config/sensorpanel/  (device selection, settings)
-  - Cache:   ~/.cache/sensorpanel/   (browser binary)
+  - Config:  ~/.config/sensorview/  (device selection, settings)
+  - Cache:   ~/.cache/sensorview/   (browser binary)
 
 Themes are kept by default. Use --all to also remove themes:
-  - Data:    ~/.local/share/sensorpanel/ (themes)
+  - Data:    ~/.local/share/sensorview/ (themes)
 
 Use --dry-run to see what would be deleted without removing anything.`,
 	RunE: runPrune,
@@ -77,7 +77,7 @@ func runPrune(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(toRemove) == 0 {
-		fmt.Println("Nothing to remove - no sensorpanel directories found.")
+		fmt.Println("Nothing to remove - no sensorview directories found.")
 		return nil
 	}
 
@@ -114,7 +114,7 @@ func runPrune(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("some directories could not be removed")
 	}
 
-	fmt.Println("\nDone. All sensorpanel data has been removed.")
+	fmt.Println("\nDone. All sensorview data has been removed.")
 	return nil
 }
 

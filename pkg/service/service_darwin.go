@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	serviceName = "com.sensorpanel.agent"
+	serviceName = "com.sensorview.agent"
 	plistName   = serviceName + ".plist"
 	labelName   = serviceName
 )
@@ -39,7 +39,7 @@ func logPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, "Library", "Logs", "sensorpanel.log"), nil
+	return filepath.Join(home, "Library", "Logs", "sensorview.log"), nil
 }
 
 func executablePath() (string, error) {
@@ -149,7 +149,7 @@ func start() error {
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("service not installed, run 'sensorpanel service install' first")
+		return fmt.Errorf("service not installed, run 'sensorview service install' first")
 	}
 
 	if err := exec.Command("launchctl", "load", path).Run(); err != nil {

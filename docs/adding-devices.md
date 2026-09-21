@@ -7,7 +7,7 @@ This guide explains how to add support for a new USB display device.
 Run the device creation wizard:
 
 ```bash
-./sensorpanel device create
+./sensorview device create
 ```
 
 Follow the prompts to generate a skeleton device profile.
@@ -83,10 +83,10 @@ func (p *QTKeJiProfile) BlitCommand(x, y, w, h int, dataLen int) []byte {
 ## Testing
 
 1. Build: `go build .`
-2. List devices: `./sensorpanel device list`
-3. Select your device: `./sensorpanel device select`
-4. Test pattern: `./sensorpanel panel test`
-5. Run dashboard: `./sensorpanel run`
+2. List devices: `./sensorview device list`
+3. Select your device: `./sensorview device select`
+4. Test pattern: `./sensorview panel test`
+5. Run dashboard: `./sensorview run`
 
 ## Common Protocol Patterns
 

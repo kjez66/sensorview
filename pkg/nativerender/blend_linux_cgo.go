@@ -7,7 +7,7 @@ package nativerender
 #include <stddef.h>
 #include <stdint.h>
 
-static void sensorpanel_blend_rgba(uint8_t * restrict dst, const uint8_t * restrict src, size_t pixels) {
+static void sensorview_blend_rgba(uint8_t * restrict dst, const uint8_t * restrict src, size_t pixels) {
   #pragma GCC ivdep
   for (size_t i = 0; i < pixels; ++i) {
     const size_t offset = i * 4;
@@ -31,7 +31,7 @@ func blendRGBA(dst, src []byte) {
 	if len(dst) == 0 || len(dst) != len(src) {
 		return
 	}
-	C.sensorpanel_blend_rgba(
+	C.sensorview_blend_rgba(
 		(*C.uint8_t)(unsafe.Pointer(&dst[0])),
 		(*C.uint8_t)(unsafe.Pointer(&src[0])),
 		C.size_t(len(dst)/4),

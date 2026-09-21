@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSensorData } from "../lib/sensorpanel";
+import { useSensorData } from "../lib/sensorview";
 import "./App.css";
 
 type Point = { label: string; value: string; percent: number; tone?: "blue" | "green" | "amber" | "red" | "violet" };
@@ -47,7 +47,7 @@ function App() {
   ];
 
   const memPercent = data.memory?.percent ?? 0;
-  const hostname = data.hostname?.hostname ?? "SensorPanel";
+  const hostname = data.hostname?.hostname ?? "SensorView";
 
   return (
     <main className="dashboard">

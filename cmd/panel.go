@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/panel"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/panel"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func openConfiguredDevice() (*panel.Device, error) {
 	}
 
 	if cfg.Device.IsZero() {
-		return nil, fmt.Errorf("no device configured - run 'sensorpanel device select' first")
+		return nil, fmt.Errorf("no device configured - run 'sensorview device select' first")
 	}
 
 	var dev *panel.Device
@@ -52,7 +52,7 @@ var panelStatusCmd = &cobra.Command{
 
 		if cfg.Device.IsZero() {
 			fmt.Println("No device configured.")
-			fmt.Println("Run 'sensorpanel device select' to select a device.")
+			fmt.Println("Run 'sensorview device select' to select a device.")
 			return nil
 		}
 

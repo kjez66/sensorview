@@ -1,5 +1,5 @@
 // Client
-export { client, SensorPanelClient } from "./client";
+export { client, SensorViewClient } from "./client";
 
 // Hooks
 export {

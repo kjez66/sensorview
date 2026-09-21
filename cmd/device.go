@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/device"
-	"github.com/oae/sensorpanel/pkg/panel"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/device"
+	"github.com/kjez66/sensorview/pkg/panel"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +21,7 @@ var deviceCmd = &cobra.Command{
 	Long: `Commands for discovering, selecting, and managing USB display devices.
 
 The selected device is saved to the config file and used by all other commands.
-Config location: ~/.config/sensorpanel/config.json (or $XDG_CONFIG_HOME/sensorpanel/)`,
+Config location: ~/.config/sensorview/config.json (or $XDG_CONFIG_HOME/sensorview/)`,
 }
 
 var deviceListCmd = &cobra.Command{
@@ -42,7 +42,7 @@ Use --all to show all USB devices with bulk endpoints that might be displays.`,
 		if len(devices) == 0 {
 			fmt.Println("No display devices found.")
 			if !showAll {
-				fmt.Println("Try 'sensorpanel device list --all' to see all potential devices.")
+				fmt.Println("Try 'sensorview device list --all' to see all potential devices.")
 			}
 			return nil
 		}
@@ -67,7 +67,7 @@ Use --all to show all USB devices with bulk endpoints that might be displays.`,
 
 		fmt.Println()
 		fmt.Println("* = Known/probable display device")
-		fmt.Println("Use 'sensorpanel device select <number>' to select a device.")
+		fmt.Println("Use 'sensorview device select <number>' to select a device.")
 
 		return nil
 	},
@@ -200,7 +200,7 @@ var deviceInfoCmd = &cobra.Command{
 
 		if cfg.Device.IsZero() {
 			fmt.Println("No device configured.")
-			fmt.Println("Run 'sensorpanel device select' to choose a device.")
+			fmt.Println("Run 'sensorview device select' to choose a device.")
 		} else {
 			fmt.Printf("VID:PID:      %04x:%04x\n", cfg.Device.VendorID, cfg.Device.ProductID)
 			if cfg.Device.Serial != "" {
@@ -246,7 +246,7 @@ var deviceResetCmd = &cobra.Command{
 		}
 
 		fmt.Println("Configuration reset to defaults.")
-		fmt.Println("No device configured. Run 'sensorpanel device select' to choose a device.")
+		fmt.Println("No device configured. Run 'sensorview device select' to choose a device.")
 
 		return nil
 	},
@@ -265,7 +265,7 @@ The generated file will be saved to pkg/device/<id>.go and you'll need to:
 1. Implement BlitCommand() based on USB traffic analysis
 2. Implement BacklightCommand() if the device supports backlight control
 3. Register the profile in pkg/device/registry.go
-4. Rebuild sensorpanel
+4. Rebuild sensorview
 
 See docs/adding-devices.md for detailed instructions on protocol research.`,
 	RunE: runDeviceCreate,
@@ -433,7 +433,7 @@ func runDeviceCreate(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("4. Rebuild: go build .")
 	fmt.Println()
-	fmt.Println("5. Test: ./sensorpanel panel test")
+	fmt.Println("5. Test: ./sensorview panel test")
 	fmt.Println()
 	fmt.Println("6. Submit a PR to share your profile with the community!")
 

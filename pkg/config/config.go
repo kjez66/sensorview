@@ -1,9 +1,9 @@
-// Package config handles platform-specific configuration for sensorpanel.
+// Package config handles platform-specific configuration for sensorview.
 //
 // Configuration is stored in platform-specific locations:
-//   - Linux:   $XDG_CONFIG_HOME/sensorpanel/config.json (default: ~/.config/sensorpanel/)
-//   - macOS:   ~/Library/Application Support/sensorpanel/config.json
-//   - Windows: %APPDATA%\sensorpanel\config.json
+//   - Linux:   $XDG_CONFIG_HOME/sensorview/config.json (default: ~/.config/sensorview/)
+//   - macOS:   ~/Library/Application Support/sensorview/config.json
+//   - Windows: %APPDATA%\sensorview\config.json
 //
 // The config file stores:
 //   - Selected USB device (VID, PID, Serial)
@@ -17,11 +17,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/oae/sensorpanel/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/paths"
 )
 
 const (
-	appName    = "sensorpanel"
+	appName    = "sensorview"
 	configFile = "config.json"
 
 	RendererAuto   = "auto"
@@ -112,7 +112,7 @@ func NormalizeRenderer(value string) (string, error) {
 	}
 }
 
-// configDir returns the platform-specific config directory for sensorpanel.
+// configDir returns the platform-specific config directory for sensorview.
 func configDir() (string, error) {
 	return paths.ConfigDir()
 }

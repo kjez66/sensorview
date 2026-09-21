@@ -6,7 +6,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source_theme="$(cd -- "$script_dir/../themes/caelestia" && pwd)"
 state_root="${XDG_STATE_HOME:-$HOME/.local/state}/caelestia"
 data_root="${XDG_DATA_HOME:-$HOME/.local/share}"
-target_theme="$data_root/sensorpanel/themes/caelestia"
+target_theme="$data_root/sensorview/themes/caelestia"
 scheme_file="$state_root/scheme.json"
 wallpaper_file="$state_root/wallpaper/current"
 api_base="http://127.0.0.1:19848/api/v1"
@@ -28,7 +28,7 @@ done
     exit 1
 }
 
-exec 9>"$runtime_root/caelestia-sensorpanel-sync.lock"
+exec 9>"$runtime_root/caelestia-sensorview-sync.lock"
 flock 9
 
 temporary_dir="$(mktemp -d)"
@@ -82,14 +82,14 @@ session_json="$(curl --connect-timeout 1 --max-time 2 --fail --silent --show-err
 session_token="$(jq -r '.token // empty' <<<"$session_json")"
 if [[ -n "$session_token" ]] &&
    curl --connect-timeout 1 --max-time 12 --fail --silent --show-error \
-       -X POST -H "X-SensorPanel-Token: $session_token" \
+       -X POST -H "X-SensorView-Token: $session_token" \
        "$api_base/theme/apply?name=caelestia" >/dev/null; then
-    printf 'SensorPanel reloaded with the current Caelestia palette and wallpaper.\n'
+    printf 'SensorView reloaded with the current Caelestia palette and wallpaper.\n'
     exit 0
 fi
 
 # Preserve the update for the next service start and restart only when the
 # running management API was unavailable.
 install -m 0644 "$generated_theme" "$target_theme/native.theme.json"
-systemctl --user try-restart sensorpanel.service >/dev/null 2>&1 || true
-printf 'SensorPanel theme updated; runtime hot reload was unavailable.\n'
+systemctl --user try-restart sensorview.service >/dev/null 2>&1 || true
+printf 'SensorView theme updated; runtime hot reload was unavailable.\n'

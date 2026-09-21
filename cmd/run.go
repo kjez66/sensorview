@@ -17,19 +17,19 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/oae/sensorpanel/pkg/activity"
-	"github.com/oae/sensorpanel/pkg/animation"
-	"github.com/oae/sensorpanel/pkg/browser"
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/device"
-	"github.com/oae/sensorpanel/pkg/management"
-	"github.com/oae/sensorpanel/pkg/music"
-	"github.com/oae/sensorpanel/pkg/nativerender"
-	"github.com/oae/sensorpanel/pkg/panel"
-	"github.com/oae/sensorpanel/pkg/renderer"
-	"github.com/oae/sensorpanel/pkg/sensors"
-	"github.com/oae/sensorpanel/pkg/server"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/activity"
+	"github.com/kjez66/sensorview/pkg/animation"
+	"github.com/kjez66/sensorview/pkg/browser"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/device"
+	"github.com/kjez66/sensorview/pkg/management"
+	"github.com/kjez66/sensorview/pkg/music"
+	"github.com/kjez66/sensorview/pkg/nativerender"
+	"github.com/kjez66/sensorview/pkg/panel"
+	"github.com/kjez66/sensorview/pkg/renderer"
+	"github.com/kjez66/sensorview/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/server"
+	"github.com/kjez66/sensorview/pkg/theme"
 )
 
 var (
@@ -85,15 +85,15 @@ Sensor options (use --opt key=value):
   nvidia_gpu.smi_path=...  - Custom path to nvidia-smi
 
 Examples:
-  sensorpanel run                                    # All sensors
-  sensorpanel run -s cpu,memory,disk                 # Only CPU, memory, and disk
-  sensorpanel run -x network                         # All except network
-  sensorpanel run --opt disk.mounts=/,/home          # Monitor specific mounts
-  sensorpanel run --gif animation.gif                # Play a local GIF continuously
-  sensorpanel run --gif https://example.com/a.gif    # Play a remote GIF
-  sensorpanel run --image wallpaper.png              # Show a static image
-  sensorpanel run --music                            # Show now-playing dashboard
-  sensorpanel run --renderer native                  # Render selected theme without Chrome
+  sensorview run                                    # All sensors
+  sensorview run -s cpu,memory,disk                 # Only CPU, memory, and disk
+  sensorview run -x network                         # All except network
+  sensorview run --opt disk.mounts=/,/home          # Monitor specific mounts
+  sensorview run --gif animation.gif                # Play a local GIF continuously
+  sensorview run --gif https://example.com/a.gif    # Play a remote GIF
+  sensorview run --image wallpaper.png              # Show a static image
+  sensorview run --music                            # Show now-playing dashboard
+  sensorview run --renderer native                  # Render selected theme without Chrome
 
 Press Ctrl+C to stop. The backlight will be turned off on exit.`,
 	RunE: runDashboard,
@@ -296,7 +296,7 @@ func runMusicDashboard(dev *panel.Device, sigChan chan os.Signal) error {
 		return err
 	}
 
-	dashboardDir, err := os.MkdirTemp("", "sensorpanel-music-*")
+	dashboardDir, err := os.MkdirTemp("", "sensorview-music-*")
 	if err != nil {
 		return fmt.Errorf("create music dashboard: %w", err)
 	}
@@ -491,7 +491,7 @@ func runWithChromeTheme(dev *panel.Device, collector *sensors.Collector, t *them
 	// Check if theme is outdated
 	if theme.IsOutdated(t.Path) {
 		fmt.Printf("Warning: Theme '%s' may be outdated (src/ is newer than dist/)\n", t.Name)
-		fmt.Printf("Run 'sensorpanel theme build %s' to rebuild\n\n", t.Name)
+		fmt.Printf("Run 'sensorview theme build %s' to rebuild\n\n", t.Name)
 	}
 
 	fmt.Printf("Using theme: %s (renderer: chrome)\n", t.Name)

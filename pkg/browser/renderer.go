@@ -36,7 +36,7 @@ type Renderer struct {
 func NewRenderer(width, height int) (*Renderer, error) {
 	chromePath, err := GetChromePath()
 	if err != nil {
-		return nil, fmt.Errorf("Chrome not found: %w (run 'sensorpanel theme install-browser' to download)", err)
+		return nil, fmt.Errorf("Chrome not found: %w (run 'sensorview theme install-browser' to download)", err)
 	}
 
 	return &Renderer{

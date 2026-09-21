@@ -1,5 +1,5 @@
 {
-  description = "SensorPanel - USB Display for System Metrics";
+  description = "SensorView - USB Display for System Metrics";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -15,10 +15,10 @@
         };
       in {
         packages = {
-          default = self.packages.${system}.sensorpanel;
+          default = self.packages.${system}.sensorview;
           
-          sensorpanel = pkgs.buildGoModule {
-            pname = "sensorpanel";
+          sensorview = pkgs.buildGoModule {
+            pname = "sensorview";
             version = "1.0.0";
             
             src = ./.;
@@ -44,16 +44,16 @@
             
             meta = with pkgs.lib; {
               description = "USB sensor display for system metrics";
-              homepage = "https://github.com/your-username/sensorpanel";
+              homepage = "https://github.com/kjez66/sensorview";
               license = licenses.mit;
               platforms = platforms.linux ++ platforms.darwin;
-              mainProgram = "sensorpanel";
+              mainProgram = "sensorview";
             };
           };
         };
 
         devShells.default = pkgs.mkShell {
-          name = "sensorpanel-dev";
+          name = "sensorview-dev";
           
           buildInputs = with pkgs; [
             # Go
@@ -76,11 +76,11 @@
           ];
           
           shellHook = ''
-            echo "SensorPanel Development Shell"
+            echo "SensorView Development Shell"
             echo ""
             echo "Build:    go build ."
-            echo "Run:      ./sensorpanel run"
-            echo "Help:     ./sensorpanel --help"
+            echo "Run:      ./sensorview run"
+            echo "Help:     ./sensorview --help"
             echo ""
           '';
         };
@@ -89,15 +89,15 @@
       # NixOS module
       nixosModules.default = { config, lib, pkgs, ... }:
         let
-          cfg = config.services.sensorpanel;
+          cfg = config.services.sensorview;
         in {
-          options.services.sensorpanel = {
-            enable = lib.mkEnableOption "SensorPanel USB display service";
+          options.services.sensorview = {
+            enable = lib.mkEnableOption "SensorView USB display service";
             
             package = lib.mkOption {
               type = lib.types.package;
-              default = self.packages.${pkgs.system}.sensorpanel;
-              description = "The sensorpanel package to use";
+              default = self.packages.${pkgs.system}.sensorview;
+              description = "The sensorview package to use";
             };
             
             interval = lib.mkOption {
@@ -132,13 +132,13 @@
             
             user = lib.mkOption {
               type = lib.types.str;
-              default = "sensorpanel";
+              default = "sensorview";
               description = "User to run the service as";
             };
             
             group = lib.mkOption {
               type = lib.types.str;
-              default = "sensorpanel";
+              default = "sensorview";
               description = "Group for USB device access";
             };
           };
@@ -150,8 +150,8 @@
               isSystemUser = true;
               group = cfg.group;
               extraGroups = [ "video" "input" ];
-              description = "SensorPanel service user";
-              home = "/var/lib/sensorpanel";
+              description = "SensorView service user";
+              home = "/var/lib/sensorview";
               createHome = true;
             };
             
@@ -165,8 +165,8 @@
             '';
             
             # Systemd service
-            systemd.services.sensorpanel = {
-              description = "SensorPanel USB Display Service";
+            systemd.services.sensorview = {
+              description = "SensorView USB Display Service";
               after = [ "network.target" ];
               wantedBy = [ "multi-user.target" ];
               
@@ -174,7 +174,7 @@
                 Type = "simple";
                 User = cfg.user;
                 Group = cfg.group;
-                ExecStart = "${cfg.package}/bin/sensorpanel run --interval ${toString cfg.interval} --brightness ${toString cfg.brightness} --renderer ${cfg.renderer}";
+                ExecStart = "${cfg.package}/bin/sensorview run --interval ${toString cfg.interval} --brightness ${toString cfg.brightness} --renderer ${cfg.renderer}";
                 Restart = "on-failure";
                 RestartSec = "5s";
                 

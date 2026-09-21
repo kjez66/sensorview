@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/oae/sensorpanel/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/paths"
 )
 
 // ErrThemeNotFound is returned when a theme doesn't exist.
@@ -43,7 +43,7 @@ func DefaultMetadata(name string) Metadata {
 	return Metadata{
 		Name:        name,
 		Version:     "1.0.0",
-		Description: "A sensorpanel theme",
+		Description: "A sensorview theme",
 		Width:       480,
 		Height:      320,
 	}
@@ -249,7 +249,7 @@ func (t *Theme) WalkDistFiles(fn func(path string, d fs.DirEntry) error) error {
 	})
 }
 
-// UpdateSDK updates the sensorpanel SDK files in a theme to the latest version.
+// UpdateSDK updates the sensorview SDK files in a theme to the latest version.
 func UpdateSDK(name string) error {
 	theme, err := Load(name)
 	if err != nil {
@@ -258,14 +258,14 @@ func UpdateSDK(name string) error {
 
 	// SDK files to update
 	sdkFiles := map[string]string{
-		"lib/sensorpanel/index.ts":  sdkIndexTS(),
-		"lib/sensorpanel/types.ts":  sdkTypesTS(),
-		"lib/sensorpanel/client.ts": sdkClientTS(),
-		"lib/sensorpanel/hooks.ts":  sdkHooksTS(),
+		"lib/sensorview/index.ts":  sdkIndexTS(),
+		"lib/sensorview/types.ts":  sdkTypesTS(),
+		"lib/sensorview/client.ts": sdkClientTS(),
+		"lib/sensorview/hooks.ts":  sdkHooksTS(),
 	}
 
-	// Ensure lib/sensorpanel directory exists
-	sdkDir := filepath.Join(theme.Path, "lib", "sensorpanel")
+	// Ensure lib/sensorview directory exists
+	sdkDir := filepath.Join(theme.Path, "lib", "sensorview")
 	if err := os.MkdirAll(sdkDir, 0755); err != nil {
 		return fmt.Errorf("failed to create SDK directory: %w", err)
 	}

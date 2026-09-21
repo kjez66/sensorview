@@ -12,7 +12,7 @@ import (
 	"syscall"
 )
 
-const serviceName = "sensorpanel.service"
+const serviceName = "sensorview.service"
 
 func serviceDir() (string, error) {
 	home, err := os.UserHomeDir()
@@ -50,7 +50,7 @@ func generateServiceFile(runArgs []string) (string, error) {
 	}
 
 	return fmt.Sprintf(`[Unit]
-Description=SensorPanel USB LCD Display
+Description=SensorView USB LCD Display
 PartOf=graphical-session.target
 After=graphical-session.target
 

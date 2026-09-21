@@ -29,7 +29,7 @@ export function bindingValue(snapshot: Record<string, unknown>, binding: Binding
 }
 
 function directBindingValue(snapshot: Record<string, unknown>, binding: Binding): unknown {
-  if (binding.provider === "system" && binding.field === "hostname") return snapshot.hostname || "sensorpanel";
+  if (binding.provider === "system" && binding.field === "hostname") return snapshot.hostname || "sensorview";
   const provider = snapshot[binding.provider] as Record<string, unknown> | undefined;
   if (!provider) return undefined;
   const findField = (value: unknown): unknown => {

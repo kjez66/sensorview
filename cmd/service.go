@@ -5,15 +5,15 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/service"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/service"
 	"github.com/spf13/cobra"
 )
 
 var serviceCmd = &cobra.Command{
 	Use:   "service",
-	Short: "Manage sensorpanel autostart service",
-	Long: `Manage the sensorpanel background service that starts automatically on login.
+	Short: "Manage sensorview autostart service",
+	Long: `Manage the sensorview background service that starts automatically on login.
 
 This command provides cross-platform service management:
   - Linux: systemd user service
@@ -23,10 +23,10 @@ This command provides cross-platform service management:
 
 var serviceInstallCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install sensorpanel as an autostart service",
-	Long: `Install sensorpanel to start automatically when you log in.
+	Short: "Install sensorview as an autostart service",
+	Long: `Install sensorview to start automatically when you log in.
 
-The service will run 'sensorpanel run' with the options specified.
+The service will run 'sensorview run' with the options specified.
 Use --music, --gif, or --image to select a media mode. Use --opt to pass
 sensor options when running the normal dashboard.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -105,20 +105,20 @@ sensor options when running the normal dashboard.`,
 			fmt.Println()
 			fmt.Println("Note: Some compositors (e.g., Hyprland) don't activate graphical-session.target.")
 			fmt.Println("If the service doesn't start on login, add to your compositor config:")
-			fmt.Println("  exec-once = systemctl --user start sensorpanel")
-			fmt.Println("  exec-shutdown = systemctl --user stop sensorpanel")
+			fmt.Println("  exec-once = systemctl --user start sensorview")
+			fmt.Println("  exec-shutdown = systemctl --user stop sensorview")
 		} else {
 			fmt.Println("The service will start automatically on next login.")
 		}
 		fmt.Println()
-		fmt.Println("To start it now, run: sensorpanel service start")
+		fmt.Println("To start it now, run: sensorview service start")
 		return nil
 	},
 }
 
 var serviceUninstallCmd = &cobra.Command{
 	Use:   "uninstall",
-	Short: "Remove sensorpanel autostart service",
+	Short: "Remove sensorview autostart service",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := service.Uninstall(); err != nil {
 			return err
@@ -131,7 +131,7 @@ var serviceUninstallCmd = &cobra.Command{
 
 var serviceStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start the sensorpanel service",
+	Short: "Start the sensorview service",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := service.Start(); err != nil {
 			return err
@@ -144,7 +144,7 @@ var serviceStartCmd = &cobra.Command{
 
 var serviceStopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "Stop the sensorpanel service",
+	Short: "Stop the sensorview service",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := service.Stop(); err != nil {
 			return err
@@ -157,7 +157,7 @@ var serviceStopCmd = &cobra.Command{
 
 var serviceStatusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show sensorpanel service status",
+	Short: "Show sensorview service status",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		status, err := service.Status()
 		if err != nil {
@@ -186,7 +186,7 @@ var serviceStatusCmd = &cobra.Command{
 
 var serviceLogsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Show sensorpanel service logs",
+	Short: "Show sensorview service logs",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		follow, _ := cmd.Flags().GetBool("follow")
 		lines, _ := cmd.Flags().GetInt("lines")

@@ -1,23 +1,23 @@
 # Creating Themes
 
 Themes can be React + TypeScript applications rendered by headless Chrome, or
-native JSON themes rendered directly by SensorPanel without Chrome.
+native JSON themes rendered directly by SensorView without Chrome.
 
 ## Quick Start
 
 ```bash
 # Create a new theme
-./sensorpanel theme create my-theme
+./sensorview theme create my-theme
 
 # Start development (opens browser with hot reload)
-./sensorpanel theme dev my-theme
+./sensorview theme dev my-theme
 
 # Build for production
-./sensorpanel theme build my-theme
+./sensorview theme build my-theme
 
 # Use with your panel
-./sensorpanel theme select my-theme
-./sensorpanel run
+./sensorview theme select my-theme
+./sensorview run
 ```
 
 ## Theme Structure
@@ -36,7 +36,7 @@ my-theme/
 │   ├── App.css       # Styles
 │   └── vite-env.d.ts
 ├── lib/
-│   └── sensorpanel/  # SDK (auto-generated)
+│   └── sensorview/  # SDK (auto-generated)
 │       ├── index.ts
 │       ├── client.ts
 │       ├── hooks.ts
@@ -46,12 +46,12 @@ my-theme/
 
 ## Renderer Modes
 
-SensorPanel supports three renderer modes for normal sensor dashboards:
+SensorView supports three renderer modes for normal sensor dashboards:
 
 ```bash
-sensorpanel run --renderer auto    # Native if native.theme.json exists, else Chrome
-sensorpanel run --renderer native  # Native Go renderer, no browser process
-sensorpanel run --renderer chrome  # Existing web theme renderer
+sensorview run --renderer auto    # Native if native.theme.json exists, else Chrome
+sensorview run --renderer native  # Native Go renderer, no browser process
+sensorview run --renderer chrome  # Existing web theme renderer
 ```
 
 `--renderer` does not affect GIF, image, or music modes. The music dashboard
@@ -63,7 +63,7 @@ CSS/React flexibility for predictable rendering cost and fewer moving parts.
 
 ### Native theme file
 
-The recommended way to build a native theme is `sensorpanel ui`. The Studio
+The recommended way to build a native theme is `sensorview ui`. The Studio
 writes schema V2 and uses the same Go renderer for its **Native preview** and
 the physical panel. The JSON remains portable and hand-editable.
 
@@ -133,16 +133,16 @@ keep bounded history in RAM and can use `series` for multiple bindings.
 the profile defaults. The Trofeo pipeline keeps compressed source frames in a
 bounded cache and reuses a small decoded-frame ring; it never retains the whole
 animation as raw RGBA. On LY panels, background JPEGs are rotated once into
-`$XDG_CACHE_HOME/sensorpanel/native-background/` and reused on later starts.
-`jpeg_encoder: "auto"` uses libjpeg-turbo only when SensorPanel was built with
+`$XDG_CACHE_HOME/sensorview/native-background/` and reused on later starts.
+`jpeg_encoder: "auto"` uses libjpeg-turbo only when SensorView was built with
 `go build -tags turbojpeg`; otherwise it safely falls back to Go's standard
 JPEG implementation.
 
 On Linux, `active_fps` and `idle_fps` enable adaptive rendering from local
-keyboard and mouse events: SensorPanel uses `active_fps` while the desktop
+keyboard and mouse events: SensorView uses `active_fps` while the desktop
 receives input, then switches to `idle_fps` after `idle_timeout_seconds`. This
 requires read access to `/dev/input` (normally membership in the `input`
-group); without it, SensorPanel safely remains active.
+group); without it, SensorView safely remains active.
 
 `idle_fps` is both the idle scheduler cadence and the panel keepalive cadence.
 In idle mode the native renderer omits video and redraws the monochrome frame
@@ -162,7 +162,7 @@ Existing React themes continue to work through `--renderer chrome`.
 The SDK provides React hooks for accessing sensor data:
 
 ```tsx
-import { useSensorData, useConnectionStatus } from "../lib/sensorpanel";
+import { useSensorData, useConnectionStatus } from "../lib/sensorview";
 
 function App() {
   const data = useSensorData();
@@ -194,7 +194,7 @@ function App() {
 ### Utility Functions
 
 ```tsx
-import { formatBytes, formatRate } from "../lib/sensorpanel";
+import { formatBytes, formatRate } from "../lib/sensorview";
 
 formatBytes(1073741824);  // "1.0 GB"
 formatRate(1048576);      // "1.0 MB/s"
@@ -256,25 +256,25 @@ html, body, #root {
 
 ## Development Workflow
 
-1. **Create theme**: `sensorpanel theme create my-theme`
+1. **Create theme**: `sensorview theme create my-theme`
 
-2. **Start dev server**: `sensorpanel theme dev my-theme`
+2. **Start dev server**: `sensorview theme dev my-theme`
    - This starts the WebSocket sensor server
    - Launches Vite dev server with HMR
    - Opens your browser automatically
 
 3. **Edit files**: Changes to `src/` hot-reload instantly
 
-4. **Build**: `sensorpanel theme build my-theme`
+4. **Build**: `sensorview theme build my-theme`
    - Runs TypeScript compiler
    - Bundles with Vite
    - Outputs to `dist/`
 
-5. **Use**: `sensorpanel theme select my-theme && sensorpanel run`
+5. **Use**: `sensorview theme select my-theme && sensorview run`
 
 ## Package Manager Support
 
-SensorPanel auto-detects your preferred package manager:
+SensorView auto-detects your preferred package manager:
 
 | Lockfile | Package Manager |
 |----------|-----------------|
@@ -302,7 +302,7 @@ npm install     # or yarn, pnpm, bun
 
 ### Thermalright Trofeo Vision 9.16 LCD themes
 
-The Trofeo Vision 9.16 LCD uses a 1920×462 render canvas in SensorPanel. Design
+The Trofeo Vision 9.16 LCD uses a 1920×462 render canvas in SensorView. Design
 for an ultrawide strip rather than a small 480×320 grid:
 
 - Use large primary values; tinted case glass reduces perceived contrast.
@@ -314,7 +314,7 @@ for an ultrawide strip rather than a small 480×320 grid:
   requires complete JPEG frames, so use `power-saver` when fan noise and CPU
   use matter more than motion smoothness.
 - The included `trofeo` theme has a native JSON definition for portrait use:
-  `sensorpanel run --orientation 90 --renderer native`.
+  `sensorview run --orientation 90 --renderer native`.
 
 ## Example Themes
 
@@ -355,11 +355,11 @@ function App() {
 
 ### "Disconnected. Retrying..."
 
-Make sure `sensorpanel theme dev` is running. The theme connects to the WebSocket server on port 19847.
+Make sure `sensorview theme dev` is running. The theme connects to the WebSocket server on port 19847.
 
 ### Theme not updating on device
 
-Run `sensorpanel theme build` to rebuild, then restart `sensorpanel run`.
+Run `sensorview theme build` to rebuild, then restart `sensorview run`.
 
 ### TypeScript errors
 

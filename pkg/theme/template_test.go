@@ -8,7 +8,7 @@ import (
 func TestViteConfigBindsEveryInterface(t *testing.T) {
 	t.Parallel()
 
-	// A theme run with a plain "npm run dev", outside sensorpanel theme dev,
+	// A theme run with a plain "npm run dev", outside sensorview theme dev,
 	// still has to be reachable from a phone on the LAN.
 	config := viteConfigTS()
 

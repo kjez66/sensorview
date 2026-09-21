@@ -1,23 +1,34 @@
-// Package cmd implements the CLI commands for sensorpanel.
+// Package cmd implements the CLI commands for sensorview.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/kjez66/sensorview/pkg/paths"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "sensorpanel",
-	Short: "Control AX206 USB display panels",
-	Long: `sensorpanel is a CLI tool for controlling AX206-based USB display panels.
+	Use:   "sensorview",
+	Short: "Turn a spare tablet or phone into a system monitor",
+	Long: `sensorview is a CLI tool that drives a live system dashboard and serves it
+to whatever screen you already own.
 
-These cheap USB displays (often sold as AIDA64-compatible) can be used
-as sensor panels to show system metrics like CPU, GPU, RAM, and network stats.
+The usual setup is an old tablet or phone on your network: run 'sensorview serve',
+open the printed address in its browser, and prop it up next to your desk. No app
+to install on the device, and no dedicated hardware to buy.
 
-Supported: AX206-based displays (480x320, RGB565)
-
-Before first use, run 'sensorpanel device select' to choose your display.`,
+AX206-based USB panels (480x320, RGB565) are still supported, inherited from the
+upstream project this is derived from - see 'sensorview device select'.`,
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+		// Installations that predate the SensorPanel -> SensorView rename keep
+		// their config, themes and browser cache under the old directory name.
+		if err := paths.MigrateLegacyDirs(); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: could not migrate sensorpanel directories: %v\n", err)
+		}
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

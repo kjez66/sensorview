@@ -2,7 +2,7 @@ let token = "";
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (token && init.method && init.method !== "GET") headers.set("X-SensorPanel-Token", token);
+  if (token && init.method && init.method !== "GET") headers.set("X-SensorView-Token", token);
   if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
   const response = await fetch(path, { ...init, headers });
   if (!response.ok) {

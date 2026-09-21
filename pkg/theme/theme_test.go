@@ -339,7 +339,7 @@ func TestList_WithThemes(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	// Create themes directory with a theme
-	themesDir := filepath.Join(tmpDir, "sensorpanel", "themes")
+	themesDir := filepath.Join(tmpDir, "sensorview", "themes")
 	themeDir := filepath.Join(themesDir, "test-theme")
 	os.MkdirAll(themeDir, 0755)
 
@@ -374,7 +374,7 @@ func TestLoad_Success(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	// Create theme directory structure
-	themesDir := filepath.Join(tmpDir, "sensorpanel", "themes")
+	themesDir := filepath.Join(tmpDir, "sensorview", "themes")
 	themeDir := filepath.Join(themesDir, "test-theme")
 	os.MkdirAll(filepath.Join(themeDir, "src"), 0755)
 	os.MkdirAll(filepath.Join(themeDir, "dist"), 0755)
@@ -416,7 +416,7 @@ func TestLoad_DefaultDimensions(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	// Create theme without dimensions in package.json
-	themesDir := filepath.Join(tmpDir, "sensorpanel", "themes")
+	themesDir := filepath.Join(tmpDir, "sensorview", "themes")
 	themeDir := filepath.Join(themesDir, "test-theme")
 	os.MkdirAll(themeDir, 0755)
 
@@ -441,7 +441,7 @@ func TestLoad_InvalidPackageJSON(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
-	themesDir := filepath.Join(tmpDir, "sensorpanel", "themes")
+	themesDir := filepath.Join(tmpDir, "sensorview", "themes")
 	themeDir := filepath.Join(themesDir, "test-theme")
 	os.MkdirAll(themeDir, 0755)
 
@@ -464,7 +464,7 @@ func TestExists(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	// Create a theme
-	themesDir := filepath.Join(tmpDir, "sensorpanel", "themes")
+	themesDir := filepath.Join(tmpDir, "sensorview", "themes")
 	themeDir := filepath.Join(themesDir, "existing-theme")
 	os.MkdirAll(themeDir, 0755)
 	os.WriteFile(filepath.Join(themeDir, "package.json"), []byte("{}"), 0644)
@@ -482,7 +482,7 @@ func TestDelete(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	// Create a theme
-	themesDir := filepath.Join(tmpDir, "sensorpanel", "themes")
+	themesDir := filepath.Join(tmpDir, "sensorview", "themes")
 	themeDir := filepath.Join(themesDir, "delete-me")
 	os.MkdirAll(themeDir, 0755)
 	os.WriteFile(filepath.Join(themeDir, "package.json"), []byte("{}"), 0644)
@@ -551,7 +551,7 @@ func TestTheme_WalkDistFiles(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	// Create theme with dist files
-	themesDir := filepath.Join(tmpDir, "sensorpanel", "themes")
+	themesDir := filepath.Join(tmpDir, "sensorview", "themes")
 	themeDir := filepath.Join(themesDir, "test-theme")
 	distDir := filepath.Join(themeDir, "dist")
 	os.MkdirAll(distDir, 0755)

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 )
 
-// ConfigDir returns the XDG config directory for sensorpanel.
-// Default: ~/.config/sensorpanel/
+// ConfigDir returns the XDG config directory for sensorview.
+// Default: ~/.config/sensorview/
 func ConfigDir() (string, error) {
 	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
 		return filepath.Join(xdgConfig, appName), nil
@@ -22,8 +22,8 @@ func ConfigDir() (string, error) {
 	return filepath.Join(home, ".config", appName), nil
 }
 
-// DataDir returns the XDG data directory for sensorpanel.
-// Default: ~/.local/share/sensorpanel/
+// DataDir returns the XDG data directory for sensorview.
+// Default: ~/.local/share/sensorview/
 func DataDir() (string, error) {
 	if xdgData := os.Getenv("XDG_DATA_HOME"); xdgData != "" {
 		return filepath.Join(xdgData, appName), nil
@@ -37,8 +37,8 @@ func DataDir() (string, error) {
 	return filepath.Join(home, ".local", "share", appName), nil
 }
 
-// CacheDir returns the XDG cache directory for sensorpanel.
-// Default: ~/.cache/sensorpanel/
+// CacheDir returns the XDG cache directory for sensorview.
+// Default: ~/.cache/sensorview/
 func CacheDir() (string, error) {
 	if xdgCache := os.Getenv("XDG_CACHE_HOME"); xdgCache != "" {
 		return filepath.Join(xdgCache, appName), nil

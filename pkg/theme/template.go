@@ -22,10 +22,10 @@ func getTemplateFiles(themeName string) map[string]string {
 		"src/vite-env.d.ts": viteEnvDTS(),
 
 		// SDK
-		"lib/sensorpanel/index.ts":  sdkIndexTS(),
-		"lib/sensorpanel/types.ts":  sdkTypesTS(),
-		"lib/sensorpanel/client.ts": sdkClientTS(),
-		"lib/sensorpanel/hooks.ts":  sdkHooksTS(),
+		"lib/sensorview/index.ts":  sdkIndexTS(),
+		"lib/sensorview/types.ts":  sdkTypesTS(),
+		"lib/sensorview/client.ts": sdkClientTS(),
+		"lib/sensorview/hooks.ts":  sdkHooksTS(),
 
 		// Pre-built dist (works immediately)
 		"dist/index.html": distIndexHTML(themeName),
@@ -37,7 +37,7 @@ func packageJSON(name string) string {
   "name": "%s",
   "private": true,
   "version": "1.0.0",
-  "description": "A sensorpanel theme",
+  "description": "A sensorview theme",
   "type": "module",
   "width": 480,
   "height": 320,
@@ -187,7 +187,7 @@ func indexHTML(name string) string {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=480, height=320, initial-scale=1.0" />
-    <title>%s - SensorPanel</title>
+    <title>%s - SensorView</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body, #root { width: 480px; height: 320px; overflow: hidden; }
@@ -227,7 +227,7 @@ createRoot(rootElement).render(
 }
 
 func appTSX() string {
-	return `import { useSensorData, formatRate } from "../lib/sensorpanel";
+	return `import { useSensorData, formatRate } from "../lib/sensorview";
 import "./App.css";
 
 function App() {
@@ -559,7 +559,7 @@ function transformData(raw: Record<string, unknown>): SensorData {
   };
 }
 
-class SensorPanelClient {
+class SensorViewClient {
   private ws: WebSocket | null = null;
   private dataListeners = new Set<DataListener>();
   private statusListeners = new Set<StatusListener>();
@@ -710,8 +710,8 @@ class SensorPanelClient {
   }
 }
 
-export const client = new SensorPanelClient();
-export { SensorPanelClient };
+export const client = new SensorViewClient();
+export { SensorViewClient };
 `
 }
 
@@ -776,7 +776,7 @@ export function formatRate(bytesPerSec: number): string {
 
 func sdkIndexTS() string {
 	return `// Client
-export { client, SensorPanelClient } from "./client";
+export { client, SensorViewClient } from "./client";
 
 // Hooks
 export {
@@ -810,7 +810,7 @@ func distIndexHTML(name string) string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=480, height=320, initial-scale=1.0" />
-  <title>%s - SensorPanel</title>
+  <title>%s - SensorView</title>
   <style>
     :root {
       --bg-color: #1a1a2e;
@@ -843,7 +843,7 @@ func distIndexHTML(name string) string {
   </style>
 </head>
 <body>
-  <div id="app" class="status">Connecting to SensorPanel...</div>
+  <div id="app" class="status">Connecting to SensorView...</div>
 
   <script>
     const DEFAULT_PORTS = [19847, 19848, 19849, 19850, 19851];
@@ -894,7 +894,7 @@ func distIndexHTML(name string) string {
     function showError(msg) {
       const app = document.getElementById('app');
       app.className = 'status error';
-      app.innerHTML = msg + '<br><small>Make sure \'sensorpanel theme dev\' is running</small>';
+      app.innerHTML = msg + '<br><small>Make sure \'sensorview theme dev\' is running</small>';
     }
 
     async function tryConnect(port) {

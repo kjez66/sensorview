@@ -1,4 +1,4 @@
-// Package management serves the local SensorPanel management studio.
+// Package management serves the local SensorView management studio.
 package management
 
 import (
@@ -28,12 +28,12 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/device"
-	"github.com/oae/sensorpanel/pkg/nativerender"
-	"github.com/oae/sensorpanel/pkg/paths"
-	"github.com/oae/sensorpanel/pkg/sensors"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/device"
+	"github.com/kjez66/sensorview/pkg/nativerender"
+	"github.com/kjez66/sensorview/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/theme"
 	"golang.org/x/image/font/opentype"
 )
 
@@ -162,7 +162,7 @@ func (s *Server) securityHeaders(next http.Handler) http.Handler {
 			return
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
-			if r.Header.Get("X-SensorPanel-Token") != s.token {
+			if r.Header.Get("X-SensorView-Token") != s.token {
 				http.Error(w, "invalid session token", http.StatusForbidden)
 				return
 			}
@@ -742,7 +742,7 @@ func (s *Server) handleLogs(w http.ResponseWriter, r *http.Request) {
 	if parsed, err := strconv.Atoi(r.URL.Query().Get("lines")); err == nil {
 		lines = min(500, max(1, parsed))
 	}
-	output, err := exec.Command("journalctl", "--user", "-u", "sensorpanel.service", "-n", strconv.Itoa(lines), "--no-pager").CombinedOutput()
+	output, err := exec.Command("journalctl", "--user", "-u", "sensorview.service", "-n", strconv.Itoa(lines), "--no-pager").CombinedOutput()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -917,7 +917,7 @@ func createStudioTheme(destination, name string, width, height int) error {
 		return err
 	}
 	metadata, _ := json.MarshalIndent(map[string]any{
-		"name": name, "version": "1.0.0", "description": "SensorPanel Studio theme",
+		"name": name, "version": "1.0.0", "description": "SensorView Studio theme",
 		"width": width, "height": height,
 	}, "", "  ")
 	if err := os.WriteFile(filepath.Join(destination, "package.json"), metadata, 0o644); err != nil {

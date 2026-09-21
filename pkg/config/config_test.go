@@ -109,7 +109,7 @@ func TestConfigPath(t *testing.T) {
 		t.Fatalf("ConfigPath() error = %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, "sensorpanel", "config.json")
+	expected := filepath.Join(tmpDir, "sensorview", "config.json")
 	if path != expected {
 		t.Errorf("ConfigPath() = %q, want %q", path, expected)
 	}
@@ -123,9 +123,9 @@ func TestConfigPath_DefaultDir(t *testing.T) {
 		t.Fatalf("ConfigPath() error = %v", err)
 	}
 
-	// Should end with .config/sensorpanel/config.json
-	if !strings.HasSuffix(path, filepath.Join(".config", "sensorpanel", "config.json")) {
-		t.Errorf("ConfigPath() = %q, want suffix ending with .config/sensorpanel/config.json", path)
+	// Should end with .config/sensorview/config.json
+	if !strings.HasSuffix(path, filepath.Join(".config", "sensorview", "config.json")) {
+		t.Errorf("ConfigPath() = %q, want suffix ending with .config/sensorview/config.json", path)
 	}
 }
 
@@ -171,7 +171,7 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 
 	// Verify file exists
-	configPath := filepath.Join(tmpDir, "sensorpanel", "config.json")
+	configPath := filepath.Join(tmpDir, "sensorview", "config.json")
 	if _, err := os.Stat(configPath); err != nil {
 		t.Fatalf("Config file not created: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestLoad_InvalidJSON(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	// Create config directory and invalid JSON file
-	configDir := filepath.Join(tmpDir, "sensorpanel")
+	configDir := filepath.Join(tmpDir, "sensorview")
 	os.MkdirAll(configDir, 0755)
 	configPath := filepath.Join(configDir, "config.json")
 	os.WriteFile(configPath, []byte("{ invalid json"), 0644)
@@ -394,7 +394,7 @@ func TestConfigCreatesDirectory(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	// Directory doesn't exist yet
-	configDir := filepath.Join(tmpDir, "sensorpanel")
+	configDir := filepath.Join(tmpDir, "sensorview")
 	if _, err := os.Stat(configDir); !os.IsNotExist(err) {
 		t.Skip("Directory already exists")
 	}

@@ -1,7 +1,7 @@
 {
   "name": "caelestia",
   "version": "1.0.0",
-  "description": "A native Material 3 SensorPanel theme inspired by Caelestia Shell",
+  "description": "A native Material 3 SensorView theme inspired by Caelestia Shell",
   "author": "Alperen",
   "width": 462,
   "height": 1920

@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oae/sensorpanel/pkg/lan"
-	"github.com/oae/sensorpanel/pkg/sensors"
-	"github.com/oae/sensorpanel/pkg/server"
+	"github.com/kjez66/sensorview/pkg/lan"
+	"github.com/kjez66/sensorview/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/server"
 )
 
 const (

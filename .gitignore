@@ -1,5 +1,5 @@
 # Go
-/sensorpanel
+/sensorview
 *.exe
 
 # JavaScript build cache

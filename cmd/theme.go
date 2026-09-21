@@ -13,12 +13,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/oae/sensorpanel/pkg/browser"
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/nativerender"
-	"github.com/oae/sensorpanel/pkg/paths"
-	"github.com/oae/sensorpanel/pkg/sensors"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/browser"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/nativerender"
+	"github.com/kjez66/sensorview/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/theme"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ var themeCmd = &cobra.Command{
 	Long: `Commands for creating, listing, and selecting themes.
 
 Themes are web-based (React/HTML/CSS) and rendered using a headless browser.
-Theme files are stored in ~/.local/share/sensorpanel/themes/`,
+Theme files are stored in ~/.local/share/sensorview/themes/`,
 }
 
 var themeListCmd = &cobra.Command{
@@ -45,7 +45,7 @@ var themeListCmd = &cobra.Command{
 
 		if len(themes) == 0 {
 			fmt.Println("No themes installed.")
-			fmt.Println("Use 'sensorpanel theme create <name>' to create one.")
+			fmt.Println("Use 'sensorview theme create <name>' to create one.")
 			return nil
 		}
 
@@ -103,7 +103,7 @@ You can customize the theme by editing files in src/ and running 'npm run build'
 		fmt.Println("  npm run dev      # Start development server")
 		fmt.Println("  npm run build    # Build for production")
 		fmt.Println()
-		fmt.Printf("To use this theme: sensorpanel theme select %s\n", name)
+		fmt.Printf("To use this theme: sensorview theme select %s\n", name)
 
 		return nil
 	},
@@ -188,7 +188,7 @@ var themeDeleteCmd = &cobra.Command{
 		currentTheme, _ := config.GetTheme()
 		if currentTheme == name {
 			fmt.Println("Warning: Deleting the currently active theme.")
-			fmt.Println("Run 'sensorpanel theme select <other>' to select another theme.")
+			fmt.Println("Run 'sensorview theme select <other>' to select another theme.")
 		}
 
 		if err := theme.Delete(name); err != nil {
@@ -305,7 +305,7 @@ Press Ctrl+C to stop all servers.`,
 		}
 
 		if themeName == "" {
-			return fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorpanel theme dev <name>")
+			return fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorview theme dev <name>")
 		}
 
 		// Load theme to get path
@@ -400,7 +400,7 @@ If no name is provided, builds the currently selected theme.`,
 		}
 
 		if themeName == "" {
-			return fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorpanel theme build <name>")
+			return fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorview theme build <name>")
 		}
 
 		// Load theme to get path
@@ -435,7 +435,7 @@ var themeBrowserInstallCmd = &cobra.Command{
 	Short: "Download headless Chrome for theme rendering",
 	Long: `Download Chrome for Testing to render themes.
 
-This downloads a portable Chrome binary to ~/.cache/sensorpanel/browser/
+This downloads a portable Chrome binary to ~/.cache/sensorview/browser/
 The browser is used to render web-based themes to images for the display.
 
 If you have Chrome/Chromium already installed, this is optional.`,
@@ -498,7 +498,7 @@ var themeBrowserStatusCmd = &cobra.Command{
 			fmt.Printf("\nWill use: %s\n", path)
 		} else {
 			fmt.Println("\nNo browser available!")
-			fmt.Println("Run 'sensorpanel theme browser install' to download one.")
+			fmt.Println("Run 'sensorview theme browser install' to download one.")
 		}
 
 		return nil
@@ -525,10 +525,10 @@ var themeSDKCmd = &cobra.Command{
 var themeSDKUpdateCmd = &cobra.Command{
 	Use:   "update [name]",
 	Short: "Update theme SDK to latest version",
-	Long: `Update the sensorpanel SDK files in a theme to the latest version.
+	Long: `Update the sensorview SDK files in a theme to the latest version.
 
-This updates the lib/sensorpanel/ directory with the latest SDK files
-from sensorpanel. Use this after upgrading sensorpanel to get bug fixes
+This updates the lib/sensorview/ directory with the latest SDK files
+from sensorview. Use this after upgrading sensorview to get bug fixes
 and new features in themes.
 
 If no name is provided, updates the currently selected theme.`,
@@ -542,7 +542,7 @@ If no name is provided, updates the currently selected theme.`,
 		}
 
 		if themeName == "" {
-			return fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorpanel theme sdk update <name>")
+			return fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorview theme sdk update <name>")
 		}
 
 		// Verify theme exists
@@ -564,12 +564,12 @@ If no name is provided, updates the currently selected theme.`,
 		fmt.Println("SDK updated successfully!")
 		fmt.Println()
 		fmt.Println("Files updated:")
-		fmt.Println("  lib/sensorpanel/index.ts")
-		fmt.Println("  lib/sensorpanel/types.ts")
-		fmt.Println("  lib/sensorpanel/client.ts")
-		fmt.Println("  lib/sensorpanel/hooks.ts")
+		fmt.Println("  lib/sensorview/index.ts")
+		fmt.Println("  lib/sensorview/types.ts")
+		fmt.Println("  lib/sensorview/client.ts")
+		fmt.Println("  lib/sensorview/hooks.ts")
 		fmt.Println()
-		fmt.Printf("Run 'sensorpanel theme build %s' to rebuild the theme.\n", themeName)
+		fmt.Printf("Run 'sensorview theme build %s' to rebuild the theme.\n", themeName)
 
 		return nil
 	},
@@ -594,7 +594,7 @@ func init() {
 	themeDevCmd.Flags().BoolVar(&themeDevNoBrowser, "no-browser", false, "Don't open browser automatically")
 	themeDevCmd.Flags().Float64VarP(&themeDevInterval, "interval", "i", 1.0, "Sensor update interval in seconds")
 	themeDevCmd.Flags().StringSliceVarP(&themeDevOpts, "opt", "o", nil, "Sensor options in key=value format (e.g., disk.mounts=/,/home)")
-	themeSnapshotNativeCmd.Flags().StringVarP(&themeSnapshotNativeOutput, "output", "o", "/tmp/sensorpanel-native-snapshot.png", "PNG output path")
+	themeSnapshotNativeCmd.Flags().StringVarP(&themeSnapshotNativeOutput, "output", "o", "/tmp/sensorview-native-snapshot.png", "PNG output path")
 
 	themeBrowserCmd.AddCommand(themeBrowserInstallCmd)
 	themeBrowserCmd.AddCommand(themeBrowserStatusCmd)

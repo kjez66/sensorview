@@ -3,14 +3,14 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/theme"
 	"github.com/spf13/cobra"
 )
 
 var uiCmd = &cobra.Command{
 	Use:   "ui",
-	Short: "Open the local SensorPanel Management Studio",
+	Short: "Open the local SensorView Management Studio",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
@@ -25,7 +25,7 @@ var uiCmd = &cobra.Command{
 			fmt.Println(url)
 			return nil
 		}
-		fmt.Printf("Opening SensorPanel Studio: %s\n", url)
+		fmt.Printf("Opening SensorView Studio: %s\n", url)
 		return theme.OpenBrowser(url)
 	},
 }

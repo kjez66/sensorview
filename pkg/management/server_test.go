@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/nativerender"
-	"github.com/oae/sensorpanel/pkg/paths"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/nativerender"
+	"github.com/kjez66/sensorview/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/theme"
 )
 
 func TestManagementRequiresTokenForMutation(t *testing.T) {
@@ -64,7 +64,7 @@ func TestConfigGetReturnsEffectiveRuntimeOverrides(t *testing.T) {
 func TestThemePreviewUsesV2Renderer(t *testing.T) {
 	dataRoot := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", dataRoot)
-	themeDir := filepath.Join(dataRoot, "sensorpanel", "themes", "preview")
+	themeDir := filepath.Join(dataRoot, "sensorview", "themes", "preview")
 	if err := os.MkdirAll(themeDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestThemePreviewUsesV2Renderer(t *testing.T) {
 	server.routes(mux)
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/theme/preview?name=preview", bytes.NewReader(body))
 	request.Host = "127.0.0.1"
-	request.Header.Set("X-SensorPanel-Token", server.token)
+	request.Header.Set("X-SensorView-Token", server.token)
 	response := httptest.NewRecorder()
 	server.securityHeaders(mux).ServeHTTP(response, request)
 	if response.Code != http.StatusOK {
@@ -140,7 +140,7 @@ func TestCloningV1ThemeMigratesCopyWithoutChangingSource(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/themes",
 		bytes.NewReader([]byte(`{"name":"legacy-v2","clone_from":"legacy"}`)))
 	request.Host = "127.0.0.1"
-	request.Header.Set("X-SensorPanel-Token", server.token)
+	request.Header.Set("X-SensorView-Token", server.token)
 	response := httptest.NewRecorder()
 	server.securityHeaders(mux).ServeHTTP(response, request)
 	if response.Code != http.StatusCreated {
@@ -153,7 +153,7 @@ func TestCloningV1ThemeMigratesCopyWithoutChangingSource(t *testing.T) {
 	if !bytes.Equal(unchanged, legacy) {
 		t.Fatal("source V1 definition was modified")
 	}
-	migrated, err := nativerender.Load(filepath.Join(dataRoot, "sensorpanel", "themes", "legacy-v2", "native.theme.json"))
+	migrated, err := nativerender.Load(filepath.Join(dataRoot, "sensorview", "themes", "legacy-v2", "native.theme.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestCloningV1ThemeMigratesCopyWithoutChangingSource(t *testing.T) {
 	}
 	applyRequest := httptest.NewRequest(http.MethodPost, "/api/v1/theme/apply?name=legacy", nil)
 	applyRequest.Host = "127.0.0.1"
-	applyRequest.Header.Set("X-SensorPanel-Token", server.token)
+	applyRequest.Header.Set("X-SensorView-Token", server.token)
 	applyResponse := httptest.NewRecorder()
 	server.securityHeaders(mux).ServeHTTP(applyResponse, applyRequest)
 	if applyResponse.Code != http.StatusConflict {
@@ -235,7 +235,7 @@ func TestThemeArchiveRoundTripRenamesTheme(t *testing.T) {
 	importRequest := httptest.NewRequest(http.MethodPost, "http://127.0.0.1/api/v1/themes/import?name=copy", &upload)
 	importRequest.Host = "127.0.0.1"
 	importRequest.Header.Set("Content-Type", writer.FormDataContentType())
-	importRequest.Header.Set("X-SensorPanel-Token", server.token)
+	importRequest.Header.Set("X-SensorView-Token", server.token)
 	importResponse := httptest.NewRecorder()
 	handler.ServeHTTP(importResponse, importRequest)
 	if importResponse.Code != http.StatusCreated {
@@ -292,7 +292,7 @@ func TestUploadRejectsInvalidImageContent(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "http://127.0.0.1/api/v1/assets/upload?name=upload&type=image", &body)
 	request.Host = "127.0.0.1"
 	request.Header.Set("Content-Type", writer.FormDataContentType())
-	request.Header.Set("X-SensorPanel-Token", server.token)
+	request.Header.Set("X-SensorView-Token", server.token)
 	response := httptest.NewRecorder()
 	server.securityHeaders(mux).ServeHTTP(response, request)
 	if response.Code != http.StatusUnprocessableEntity {

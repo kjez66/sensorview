@@ -13,9 +13,9 @@ import (
 
 var Default = Build
 
-// Build compiles sensorpanel for the current platform
+// Build compiles sensorview for the current platform
 func Build() error {
-	fmt.Println("Building sensorpanel...")
+	fmt.Println("Building sensorview...")
 	return sh.Run("go", "build", "-o", binaryName(), ".")
 }
 
@@ -39,15 +39,15 @@ func Vet() error {
 
 // Install builds and installs to GOPATH/bin
 func Install() error {
-	fmt.Println("Installing sensorpanel...")
+	fmt.Println("Installing sensorview...")
 	return sh.Run("go", "install", ".")
 }
 
 // Clean removes build artifacts
 func Clean() error {
 	fmt.Println("Cleaning...")
-	os.Remove("sensorpanel")
-	os.Remove("sensorpanel.exe")
+	os.Remove("sensorview")
+	os.Remove("sensorview.exe")
 	return os.RemoveAll("dist")
 }
 
@@ -78,7 +78,7 @@ func Release() error {
 			ext = ".exe"
 		}
 
-		output := fmt.Sprintf("dist/sensorpanel-%s-%s%s", t.goos, t.goarch, ext)
+		output := fmt.Sprintf("dist/sensorview-%s-%s%s", t.goos, t.goarch, ext)
 
 		env := map[string]string{
 			"GOOS":        t.goos,
@@ -126,7 +126,7 @@ func Check() error {
 
 func binaryName() string {
 	if runtime.GOOS == "windows" {
-		return "sensorpanel.exe"
+		return "sensorview.exe"
 	}
-	return "sensorpanel"
+	return "sensorview"
 }

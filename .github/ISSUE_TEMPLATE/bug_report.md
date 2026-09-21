@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in sensorpanel
+about: Report a bug in sensorview
 title: '[Bug] '
 labels: 'bug'
 ---
@@ -27,7 +27,7 @@ What actually happened.
 
 - OS: [e.g., Ubuntu 24.04, Windows 11, macOS 14]
 - Go version: [e.g., 1.22.0]
-- sensorpanel version: [e.g., 1.0.0 or commit hash]
+- sensorview version: [e.g., 1.0.0 or commit hash]
 
 ## Device Info (if applicable)
 

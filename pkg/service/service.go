@@ -10,13 +10,13 @@ type ServiceStatus struct {
 	PID       int    // Process ID if running
 }
 
-// Install installs sensorpanel as an autostart service.
-// runArgs are passed to the sensorpanel run command.
+// Install installs sensorview as an autostart service.
+// runArgs are passed to the sensorview run command.
 func Install(runArgs []string) error {
 	return install(runArgs)
 }
 
-// Uninstall removes the sensorpanel autostart service.
+// Uninstall removes the sensorview autostart service.
 func Uninstall() error {
 	return uninstall()
 }

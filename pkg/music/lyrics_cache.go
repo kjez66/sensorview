@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oae/sensorpanel/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/paths"
 )
 
 const (

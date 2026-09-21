@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oae/sensorpanel/pkg/device"
+	"github.com/kjez66/sensorview/pkg/device"
 )
 
 func TestNewDeviceInfo(t *testing.T) {

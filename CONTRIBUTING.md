@@ -1,4 +1,4 @@
-# Contributing to SensorPanel
+# Contributing to SensorView
 
 Thank you for your interest in contributing!
 
@@ -11,8 +11,8 @@ Thank you for your interest in contributing!
 
 2. Clone and build:
    ```bash
-   git clone https://github.com/alperen/sensorpanel.git
-   cd sensorpanel
+   git clone https://github.com/alperen/sensorview.git
+   cd sensorview
    go build .
    ```
 
@@ -35,7 +35,7 @@ Thank you for your interest in contributing!
 The easiest way to add a new device is using the interactive wizard:
 
 ```bash
-./sensorpanel device create
+./sensorview device create
 ```
 
 This will prompt you for device information and generate a skeleton profile.
@@ -62,15 +62,15 @@ This will prompt you for device information and generate a skeleton profile.
 
 1. Create a new theme:
    ```bash
-   ./sensorpanel theme create my-theme
+   ./sensorview theme create my-theme
    ```
 
 2. Develop with hot reload:
    ```bash
-   ./sensorpanel theme dev my-theme
+   ./sensorview theme dev my-theme
    ```
 
-3. The theme uses React + TypeScript with a pre-built SDK in `lib/sensorpanel/`.
+3. The theme uses React + TypeScript with a pre-built SDK in `lib/sensorview/`.
 
 4. See `docs/creating-themes.md` for detailed documentation.
 

@@ -14,7 +14,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/oae/sensorpanel/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/paths"
 )
 
 // Chrome for Testing download URLs (stable versions)

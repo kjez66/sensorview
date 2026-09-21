@@ -131,7 +131,7 @@ function transformData(raw: Record<string, unknown>): SensorData {
   return result;
 }
 
-class SensorPanelClient {
+class SensorViewClient {
   private ws: WebSocket | null = null;
   private dataListeners = new Set<DataListener>();
   private statusListeners = new Set<StatusListener>();
@@ -168,7 +168,7 @@ class SensorPanelClient {
     // Check for ?ws=PORT query param first
     const params = new URLSearchParams(window.location.search);
     const wsPortParam = params.get("ws");
-
+    
     if (wsPortParam) {
       const port = parseInt(wsPortParam, 10);
       if (!isNaN(port)) {
@@ -282,5 +282,5 @@ class SensorPanelClient {
   }
 }
 
-export const client = new SensorPanelClient();
-export { SensorPanelClient };
+export const client = new SensorViewClient();
+export { SensorViewClient };

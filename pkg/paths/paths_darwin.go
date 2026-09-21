@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 )
 
-// ConfigDir returns the Application Support directory for sensorpanel on macOS.
-// Default: ~/Library/Application Support/sensorpanel/
+// ConfigDir returns the Application Support directory for sensorview on macOS.
+// Default: ~/Library/Application Support/sensorview/
 func ConfigDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -18,8 +18,8 @@ func ConfigDir() (string, error) {
 	return filepath.Join(home, "Library", "Application Support", appName), nil
 }
 
-// DataDir returns the Application Support directory for sensorpanel on macOS.
-// Default: ~/Library/Application Support/sensorpanel/
+// DataDir returns the Application Support directory for sensorview on macOS.
+// Default: ~/Library/Application Support/sensorview/
 // Respects XDG_DATA_HOME if set (for testing).
 func DataDir() (string, error) {
 	// Check XDG_DATA_HOME first (mainly for testing)
@@ -30,8 +30,8 @@ func DataDir() (string, error) {
 	return ConfigDir()
 }
 
-// CacheDir returns the Caches directory for sensorpanel on macOS.
-// Default: ~/Library/Caches/sensorpanel/
+// CacheDir returns the Caches directory for sensorview on macOS.
+// Default: ~/Library/Caches/sensorview/
 func CacheDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

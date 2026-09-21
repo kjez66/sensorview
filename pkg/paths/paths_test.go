@@ -19,7 +19,7 @@ func TestConfigDir(t *testing.T) {
 			t.Fatalf("ConfigDir() error = %v", err)
 		}
 
-		expected := filepath.Join(tmpDir, "sensorpanel")
+		expected := filepath.Join(tmpDir, "sensorview")
 		if dir != expected {
 			t.Errorf("ConfigDir() = %q, want %q", dir, expected)
 		}
@@ -33,9 +33,9 @@ func TestConfigDir(t *testing.T) {
 			t.Fatalf("ConfigDir() error = %v", err)
 		}
 
-		// Should end with .config/sensorpanel
-		if !strings.HasSuffix(dir, filepath.Join(".config", "sensorpanel")) {
-			t.Errorf("ConfigDir() = %q, want suffix %q", dir, filepath.Join(".config", "sensorpanel"))
+		// Should end with .config/sensorview
+		if !strings.HasSuffix(dir, filepath.Join(".config", "sensorview")) {
+			t.Errorf("ConfigDir() = %q, want suffix %q", dir, filepath.Join(".config", "sensorview"))
 		}
 	})
 }
@@ -50,7 +50,7 @@ func TestDataDir(t *testing.T) {
 			t.Fatalf("DataDir() error = %v", err)
 		}
 
-		expected := filepath.Join(tmpDir, "sensorpanel")
+		expected := filepath.Join(tmpDir, "sensorview")
 		if dir != expected {
 			t.Errorf("DataDir() = %q, want %q", dir, expected)
 		}
@@ -64,9 +64,9 @@ func TestDataDir(t *testing.T) {
 			t.Fatalf("DataDir() error = %v", err)
 		}
 
-		// Should end with .local/share/sensorpanel
-		if !strings.HasSuffix(dir, filepath.Join(".local", "share", "sensorpanel")) {
-			t.Errorf("DataDir() = %q, want suffix %q", dir, filepath.Join(".local", "share", "sensorpanel"))
+		// Should end with .local/share/sensorview
+		if !strings.HasSuffix(dir, filepath.Join(".local", "share", "sensorview")) {
+			t.Errorf("DataDir() = %q, want suffix %q", dir, filepath.Join(".local", "share", "sensorview"))
 		}
 	})
 }
@@ -81,7 +81,7 @@ func TestCacheDir(t *testing.T) {
 			t.Fatalf("CacheDir() error = %v", err)
 		}
 
-		expected := filepath.Join(tmpDir, "sensorpanel")
+		expected := filepath.Join(tmpDir, "sensorview")
 		if dir != expected {
 			t.Errorf("CacheDir() = %q, want %q", dir, expected)
 		}
@@ -95,9 +95,9 @@ func TestCacheDir(t *testing.T) {
 			t.Fatalf("CacheDir() error = %v", err)
 		}
 
-		// Should end with .cache/sensorpanel
-		if !strings.HasSuffix(dir, filepath.Join(".cache", "sensorpanel")) {
-			t.Errorf("CacheDir() = %q, want suffix %q", dir, filepath.Join(".cache", "sensorpanel"))
+		// Should end with .cache/sensorview
+		if !strings.HasSuffix(dir, filepath.Join(".cache", "sensorview")) {
+			t.Errorf("CacheDir() = %q, want suffix %q", dir, filepath.Join(".cache", "sensorview"))
 		}
 	})
 }
@@ -111,7 +111,7 @@ func TestThemesDir(t *testing.T) {
 		t.Fatalf("ThemesDir() error = %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, "sensorpanel", "themes")
+	expected := filepath.Join(tmpDir, "sensorview", "themes")
 	if dir != expected {
 		t.Errorf("ThemesDir() = %q, want %q", dir, expected)
 	}
@@ -126,7 +126,7 @@ func TestBrowserDir(t *testing.T) {
 		t.Fatalf("BrowserDir() error = %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, "sensorpanel", "browser")
+	expected := filepath.Join(tmpDir, "sensorview", "browser")
 	if dir != expected {
 		t.Errorf("BrowserDir() = %q, want %q", dir, expected)
 	}
@@ -141,7 +141,7 @@ func TestThemeDir(t *testing.T) {
 		t.Fatalf("ThemeDir() error = %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, "sensorpanel", "themes", "my-theme")
+	expected := filepath.Join(tmpDir, "sensorview", "themes", "my-theme")
 	if dir != expected {
 		t.Errorf("ThemeDir() = %q, want %q", dir, expected)
 	}
@@ -185,7 +185,7 @@ func TestEnsureThemesDir(t *testing.T) {
 		t.Fatalf("EnsureThemesDir() error = %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, "sensorpanel", "themes")
+	expected := filepath.Join(tmpDir, "sensorview", "themes")
 	if dir != expected {
 		t.Errorf("EnsureThemesDir() = %q, want %q", dir, expected)
 	}
@@ -209,7 +209,7 @@ func TestEnsureBrowserDir(t *testing.T) {
 		t.Fatalf("EnsureBrowserDir() error = %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, "sensorpanel", "browser")
+	expected := filepath.Join(tmpDir, "sensorview", "browser")
 	if dir != expected {
 		t.Errorf("EnsureBrowserDir() = %q, want %q", dir, expected)
 	}
@@ -235,14 +235,14 @@ func TestAppName(t *testing.T) {
 	dataDir, _ := DataDir()
 	cacheDir, _ := CacheDir()
 
-	// All should have sensorpanel as the last component
-	if filepath.Base(configDir) != "sensorpanel" {
-		t.Errorf("ConfigDir base = %q, want sensorpanel", filepath.Base(configDir))
+	// All should have sensorview as the last component
+	if filepath.Base(configDir) != "sensorview" {
+		t.Errorf("ConfigDir base = %q, want sensorview", filepath.Base(configDir))
 	}
-	if filepath.Base(dataDir) != "sensorpanel" {
-		t.Errorf("DataDir base = %q, want sensorpanel", filepath.Base(dataDir))
+	if filepath.Base(dataDir) != "sensorview" {
+		t.Errorf("DataDir base = %q, want sensorview", filepath.Base(dataDir))
 	}
-	if filepath.Base(cacheDir) != "sensorpanel" {
-		t.Errorf("CacheDir base = %q, want sensorpanel", filepath.Base(cacheDir))
+	if filepath.Base(cacheDir) != "sensorview" {
+		t.Errorf("CacheDir base = %q, want sensorview", filepath.Base(cacheDir))
 	}
 }

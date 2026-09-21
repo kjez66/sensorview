@@ -1,21 +1,21 @@
-// Package paths provides platform-specific directory paths for sensorpanel.
+// Package paths provides platform-specific directory paths for sensorview.
 //
 // Directory structure varies by platform:
 //
 // Linux:
-//   - Config:  $XDG_CONFIG_HOME/sensorpanel/ (default: ~/.config/sensorpanel/)
-//   - Data:    $XDG_DATA_HOME/sensorpanel/   (default: ~/.local/share/sensorpanel/)
-//   - Cache:   $XDG_CACHE_HOME/sensorpanel/  (default: ~/.cache/sensorpanel/)
+//   - Config:  $XDG_CONFIG_HOME/sensorview/ (default: ~/.config/sensorview/)
+//   - Data:    $XDG_DATA_HOME/sensorview/   (default: ~/.local/share/sensorview/)
+//   - Cache:   $XDG_CACHE_HOME/sensorview/  (default: ~/.cache/sensorview/)
 //
 // macOS:
-//   - Config:  ~/Library/Application Support/sensorpanel/
-//   - Data:    ~/Library/Application Support/sensorpanel/
-//   - Cache:   ~/Library/Caches/sensorpanel/
+//   - Config:  ~/Library/Application Support/sensorview/
+//   - Data:    ~/Library/Application Support/sensorview/
+//   - Cache:   ~/Library/Caches/sensorview/
 //
 // Windows:
-//   - Config:  %APPDATA%\sensorpanel\
-//   - Data:    %LOCALAPPDATA%\sensorpanel\
-//   - Cache:   %LOCALAPPDATA%\sensorpanel\cache\
+//   - Config:  %APPDATA%\sensorview\
+//   - Data:    %LOCALAPPDATA%\sensorview\
+//   - Cache:   %LOCALAPPDATA%\sensorview\cache\
 //
 // Subdirectories:
 //   - themes/  -> in Data directory (user-installed themes)
@@ -27,7 +27,7 @@ import (
 	"path/filepath"
 )
 
-const appName = "sensorpanel"
+const appName = "sensorview"
 
 // ThemesDir returns the directory where themes are stored.
 func ThemesDir() (string, error) {

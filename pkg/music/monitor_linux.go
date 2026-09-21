@@ -406,7 +406,7 @@ func (m *Monitor) fetchExactLyrics(ctx context.Context, title, artist string, du
 	if err != nil {
 		return lyricsCacheEntry{}, false, true
 	}
-	request.Header.Set("User-Agent", "sensorpanel/1.0 (music dashboard)")
+	request.Header.Set("User-Agent", "sensorview/1.0 (music dashboard)")
 	response, err := m.httpClient.Do(request)
 	if err != nil {
 		return lyricsCacheEntry{}, false, true
@@ -441,7 +441,7 @@ func (m *Monitor) searchLyrics(ctx context.Context, title, artist, originalTitle
 		if err != nil {
 			continue
 		}
-		request.Header.Set("User-Agent", "sensorpanel/1.0 (music dashboard)")
+		request.Header.Set("User-Agent", "sensorview/1.0 (music dashboard)")
 		response, err := m.httpClient.Do(request)
 		if err != nil {
 			return lyricsCacheEntry{}, false, true

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	bitmap "github.com/oae/sensorpanel/pkg/renderer"
+	bitmap "github.com/kjez66/sensorview/pkg/renderer"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"

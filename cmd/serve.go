@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/display"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/display"
+	"github.com/kjez66/sensorview/pkg/theme"
 )
 
 var (
@@ -30,12 +30,12 @@ var serveCmd = &cobra.Command{
 
 This needs no USB device, no Node toolchain and no headless browser: it serves
 the theme's dist/ directory and streams sensor readings over a WebSocket on the
-same port. Build the theme first with 'sensorpanel theme build <name>'.
+same port. Build the theme first with 'sensorview theme build <name>'.
 
 By default it listens on loopback only. To use a phone or tablet as the panel,
 bind every interface:
 
-  sensorpanel serve trofeo --addr 0.0.0.0:19847
+  sensorview serve trofeo --addr 0.0.0.0:19847
 
 The addresses to open are printed on startup. Note that the sensor feed has no
 authentication, so anyone who can reach that port can read your system metrics;
@@ -97,7 +97,7 @@ func resolveServeTheme(args []string) (string, error) {
 
 	themeName, _ := config.GetTheme()
 	if themeName == "" {
-		return "", fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorpanel serve <name>")
+		return "", fmt.Errorf("no theme specified and no theme selected in config\nUse: sensorview serve <name>")
 	}
 	return themeName, nil
 }

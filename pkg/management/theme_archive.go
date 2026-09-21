@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/oae/sensorpanel/pkg/paths"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/paths"
+	"github.com/kjez66/sensorview/pkg/theme"
 )
 
 func (s *Server) handleThemeExport(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +97,7 @@ func (s *Server) handleThemeImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	temporary, err := os.CreateTemp("", "sensorpanel-theme-*.zip")
+	temporary, err := os.CreateTemp("", "sensorview-theme-*.zip")
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return

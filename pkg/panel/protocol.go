@@ -11,7 +11,7 @@
 //   - Pixel data is sent as raw RGB565 (16-bit, BIG-ENDIAN byte order!)
 //
 // Device selection:
-//   - No hardcoded VID/PID - device must be configured via 'sensorpanel device select'
+//   - No hardcoded VID/PID - device must be configured via 'sensorview device select'
 //   - USB endpoints are detected dynamically from device descriptors
 package panel
 
@@ -22,7 +22,7 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/oae/sensorpanel/pkg/device"
+	"github.com/kjez66/sensorview/pkg/device"
 )
 
 // Display dimensions (detected devices may vary - these are common defaults)

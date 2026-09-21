@@ -52,7 +52,7 @@ func TestLyricsCacheKeyNormalization(t *testing.T) {
 func fatalCacheFile(t *testing.T, key, message string) {
 	t.Helper()
 	root := os.Getenv("XDG_CACHE_HOME")
-	path := filepath.Join(root, "sensorpanel", "lyrics", key+".json")
+	path := filepath.Join(root, "sensorview", "lyrics", key+".json")
 	data, _ := os.ReadFile(path)
 	t.Fatalf("%s (%s: %s)", message, path, data)
 }

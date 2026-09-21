@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	serviceName = "SensorPanel"
+	serviceName = "SensorView"
 	registryKey = `Software\Microsoft\Windows\CurrentVersion\Run`
 )
 
@@ -46,7 +46,7 @@ func logPath() (string, error) {
 		}
 		localAppData = filepath.Join(home, "AppData", "Local")
 	}
-	return filepath.Join(localAppData, "sensorpanel", "sensorpanel.log"), nil
+	return filepath.Join(localAppData, "sensorview", "sensorview.log"), nil
 }
 
 func executablePath() (string, error) {
@@ -157,7 +157,7 @@ func start() error {
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("service not installed, run 'sensorpanel service install' first")
+		return fmt.Errorf("service not installed, run 'sensorview service install' first")
 	}
 
 	// Start the batch file in background
@@ -170,8 +170,8 @@ func start() error {
 }
 
 func stop() error {
-	// Find and kill sensorpanel.exe process
-	cmd := exec.Command("taskkill", "/IM", "sensorpanel.exe", "/F")
+	// Find and kill sensorview.exe process
+	cmd := exec.Command("taskkill", "/IM", "sensorview.exe", "/F")
 	if err := cmd.Run(); err != nil {
 		// Check if it's because process wasn't found
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 128 {
@@ -200,18 +200,18 @@ func status() (*ServiceStatus, error) {
 	s.Installed = true
 
 	// Check if running using tasklist
-	out, err := exec.Command("tasklist", "/FI", "IMAGENAME eq sensorpanel.exe", "/FO", "CSV", "/NH").Output()
+	out, err := exec.Command("tasklist", "/FI", "IMAGENAME eq sensorview.exe", "/FO", "CSV", "/NH").Output()
 	if err != nil {
 		s.State = "stopped"
 		return s, nil
 	}
 
 	output := string(out)
-	if strings.Contains(output, "sensorpanel.exe") {
+	if strings.Contains(output, "sensorview.exe") {
 		s.Running = true
 		s.State = "running"
 		// Try to extract PID from CSV output
-		// Format: "sensorpanel.exe","1234","Console","1","12,345 K"
+		// Format: "sensorview.exe","1234","Console","1","12,345 K"
 		parts := strings.Split(output, ",")
 		if len(parts) >= 2 {
 			pidStr := strings.Trim(parts[1], "\" \r\n")

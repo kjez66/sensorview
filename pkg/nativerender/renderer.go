@@ -19,9 +19,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oae/sensorpanel/pkg/jpegcodec"
-	apppaths "github.com/oae/sensorpanel/pkg/paths"
-	bitmap "github.com/oae/sensorpanel/pkg/renderer"
+	"github.com/kjez66/sensorview/pkg/jpegcodec"
+	apppaths "github.com/kjez66/sensorview/pkg/paths"
+	bitmap "github.com/kjez66/sensorview/pkg/renderer"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	_ "golang.org/x/image/webp"
@@ -719,7 +719,7 @@ func rotateRGBAInto(dst, src *image.RGBA, degrees int) {
 func (r *Renderer) drawTrofeoVertical(img *image.RGBA, data map[string]interface{}, now time.Time) {
 	host, _ := os.Hostname()
 	if host == "" {
-		host = "sensorpanel"
+		host = "sensorview"
 	}
 	cpu := nested(data, "cpu")
 	board := nested(data, "motherboard")

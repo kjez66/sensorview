@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oae/sensorpanel/pkg/lan"
+	"github.com/kjez66/sensorview/pkg/lan"
 )
 
 func TestNewDefaultsToLoopback(t *testing.T) {

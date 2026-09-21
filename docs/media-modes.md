@@ -1,6 +1,6 @@
 # Media and Music Modes
 
-SensorPanel can replace the sensor dashboard with a static image, animated GIF,
+SensorView can replace the sensor dashboard with a static image, animated GIF,
 or now-playing music display. These modes are mutually exclusive.
 
 ## Static images
@@ -8,13 +8,13 @@ or now-playing music display. These modes are mutually exclusive.
 Display a local PNG, JPEG, or GIF:
 
 ```bash
-sensorpanel run --image /path/to/image.png
+sensorview run --image /path/to/image.png
 ```
 
 HTTP and HTTPS URLs are supported:
 
 ```bash
-sensorpanel run --image https://example.com/cover.jpg
+sensorview run --image https://example.com/cover.jpg
 ```
 
 Images retain their aspect ratio and are letterboxed with black when their
@@ -27,8 +27,8 @@ through `--image` display their first frame.
 Play and continuously loop a local or remote GIF:
 
 ```bash
-sensorpanel run --gif /path/to/animation.gif
-sensorpanel run --gif https://example.com/animation.gif
+sensorview run --gif /path/to/animation.gif
+sensorview run --gif https://example.com/animation.gif
 ```
 
 Frame delays and GIF disposal behavior are preserved. Frames retain their
@@ -49,7 +49,7 @@ frame.
 Start the now-playing display:
 
 ```bash
-sensorpanel run --music
+sensorview run --music
 ```
 
 The dashboard is designed for a 480×320 display and includes:
@@ -86,7 +86,7 @@ browsers, is embedded before rendering so the dashboard can load it reliably.
 
 ### Lyrics
 
-SensorPanel requests lyrics from LRCLIB when the track changes. Timed LRC lyrics
+SensorView requests lyrics from LRCLIB when the track changes. Timed LRC lyrics
 are synchronized with the MPRIS playback position and automatically centered on
 the active line. If only plain lyrics are available, the dashboard shows a
 fallback excerpt. Missing lyrics do not stop playback metadata from updating.
@@ -96,15 +96,15 @@ depend on the title, artist, and duration reported by the player.
 
 ### Lyrics cache
 
-Fetched lyrics are cached under the platform SensorPanel cache directory. On
-Linux this is `$XDG_CACHE_HOME/sensorpanel/lyrics`, or
-`~/.cache/sensorpanel/lyrics` when `XDG_CACHE_HOME` is unset. Cache filenames
+Fetched lyrics are cached under the platform SensorView cache directory. On
+Linux this is `$XDG_CACHE_HOME/sensorview/lyrics`, or
+`~/.cache/sensorview/lyrics` when `XDG_CACHE_HOME` is unset. Cache filenames
 are SHA-256 hashes of normalized title, artist, and duration metadata.
 
 Synchronized and plain lyrics are retained for 90 days. A “not found” result is
 retained for 24 hours to avoid repeatedly querying the service for the same
 track. Temporary network and server failures are not cached. Running
-`sensorpanel prune` clears the cache, including cached lyrics.
+`sensorview prune` clears the cache, including cached lyrics.
 
 ### Refresh interval
 
@@ -112,7 +112,7 @@ Music mode defaults to a 0.5-second display interval. The minimum is 0.25
 seconds:
 
 ```bash
-sensorpanel run --music --interval 0.5
+sensorview run --music --interval 0.5
 ```
 
 Music mode uses the same regional-update pipeline as sensor dashboards. Static
@@ -124,15 +124,15 @@ can be sent as smaller updates when the panel supports rectangular writes.
 Install or update the service for a media mode:
 
 ```bash
-sensorpanel service install --music
-sensorpanel service install --gif https://example.com/animation.gif
-sensorpanel service install --image /path/to/wallpaper.png
+sensorview service install --music
+sensorview service install --gif https://example.com/animation.gif
+sensorview service install --image /path/to/wallpaper.png
 ```
 
 Optional display settings can be persisted in the service:
 
 ```bash
-sensorpanel service install --music --interval 0.5 --brightness 7
+sensorview service install --music --interval 0.5 --brightness 7
 ```
 
 Only one of `--music`, `--gif`, and `--image` may be used. Re-running
@@ -140,15 +140,15 @@ Only one of `--music`, `--gif`, and `--image` may be used. Re-running
 change:
 
 ```bash
-sensorpanel service stop
-sensorpanel service start
-sensorpanel service status
+sensorview service stop
+sensorview service start
+sensorview service status
 ```
 
 On Linux, inspect the effective command with:
 
 ```bash
-systemctl --user cat sensorpanel.service
+systemctl --user cat sensorview.service
 ```
 
 ## Interaction with themes and sensors

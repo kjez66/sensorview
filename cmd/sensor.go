@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/oae/sensorpanel/pkg/config"
-	"github.com/oae/sensorpanel/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/config"
+	"github.com/kjez66/sensorview/pkg/sensors"
 	"github.com/spf13/cobra"
 )
 
@@ -59,10 +59,10 @@ var sensorReadCmd = &cobra.Command{
 	Long: `Read and display current values from all or specified sensors.
 
 Examples:
-  sensorpanel sensor read           # Read all sensors
-  sensorpanel sensor read cpu       # Read only CPU sensor
-  sensorpanel sensor read cpu memory # Read CPU and memory sensors
-  sensorpanel sensor read --json    # Output as JSON`,
+  sensorview sensor read           # Read all sensors
+  sensorview sensor read cpu       # Read only CPU sensor
+  sensorview sensor read cpu memory # Read CPU and memory sensors
+  sensorview sensor read --json    # Output as JSON`,
 	RunE: runSensorRead,
 }
 
@@ -424,8 +424,8 @@ func runSensorCreate(cmd *cobra.Command, args []string) error {
 	fmt.Println("  1. Open the file and implement the Collect() method")
 	fmt.Println("  2. Implement the Available() check if needed")
 	fmt.Println("  3. Run 'go build ./...' to verify compilation")
-	fmt.Println("  4. Run 'sensorpanel sensor list' to see your sensor")
-	fmt.Println("  5. Run 'sensorpanel sensor types' to generate updated TypeScript types")
+	fmt.Println("  4. Run 'sensorview sensor list' to see your sensor")
+	fmt.Println("  5. Run 'sensorview sensor types' to generate updated TypeScript types")
 
 	return nil
 }

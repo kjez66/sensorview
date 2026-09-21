@@ -1,4 +1,4 @@
-module github.com/oae/sensorpanel
+module github.com/kjez66/sensorview
 
 go 1.24.0
 

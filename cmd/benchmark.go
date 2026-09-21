@@ -12,11 +12,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/oae/sensorpanel/pkg/device"
-	"github.com/oae/sensorpanel/pkg/nativerender"
-	"github.com/oae/sensorpanel/pkg/panel"
-	"github.com/oae/sensorpanel/pkg/sensors"
-	"github.com/oae/sensorpanel/pkg/theme"
+	"github.com/kjez66/sensorview/pkg/device"
+	"github.com/kjez66/sensorview/pkg/nativerender"
+	"github.com/kjez66/sensorview/pkg/panel"
+	"github.com/kjez66/sensorview/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/theme"
 	"github.com/spf13/cobra"
 )
 

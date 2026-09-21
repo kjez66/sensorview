@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 )
 
-// ConfigDir returns the AppData Roaming directory for sensorpanel on Windows.
-// Default: %APPDATA%\sensorpanel\
+// ConfigDir returns the AppData Roaming directory for sensorview on Windows.
+// Default: %APPDATA%\sensorview\
 func ConfigDir() (string, error) {
 	appData := os.Getenv("APPDATA")
 	if appData == "" {
@@ -22,8 +22,8 @@ func ConfigDir() (string, error) {
 	return filepath.Join(appData, appName), nil
 }
 
-// DataDir returns the LocalAppData directory for sensorpanel on Windows.
-// Default: %LOCALAPPDATA%\sensorpanel\
+// DataDir returns the LocalAppData directory for sensorview on Windows.
+// Default: %LOCALAPPDATA%\sensorview\
 // Respects XDG_DATA_HOME if set (for testing).
 func DataDir() (string, error) {
 	// Check XDG_DATA_HOME first (mainly for testing)
@@ -43,8 +43,8 @@ func DataDir() (string, error) {
 	return filepath.Join(localAppData, appName), nil
 }
 
-// CacheDir returns the LocalAppData cache directory for sensorpanel on Windows.
-// Default: %LOCALAPPDATA%\sensorpanel\cache\
+// CacheDir returns the LocalAppData cache directory for sensorview on Windows.
+// Default: %LOCALAPPDATA%\sensorview\cache\
 func CacheDir() (string, error) {
 	dataDir, err := DataDir()
 	if err != nil {

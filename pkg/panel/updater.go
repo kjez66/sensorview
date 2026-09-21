@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/oae/sensorpanel/pkg/device"
+	"github.com/kjez66/sensorview/pkg/device"
 )
 
 const (

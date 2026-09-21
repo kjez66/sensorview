@@ -1,12 +1,12 @@
-// Package config provides USB device discovery for sensorpanel.
+// Package config provides USB device discovery for sensorview.
 package config
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/oae/sensorpanel/pkg/device"
 	"github.com/google/gousb"
+	"github.com/kjez66/sensorview/pkg/device"
 )
 
 // DiscoveredDevice represents a USB device found during scanning.
