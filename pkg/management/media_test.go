@@ -3,6 +3,7 @@ package management
 import (
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -37,7 +38,7 @@ func TestImageCropJobProducesExactDimensions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(probe) != "64x128\n" {
+			if strings.TrimSpace(string(probe)) != "64x128" {
 				t.Fatalf("dimensions = %q", probe)
 			}
 			return

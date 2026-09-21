@@ -50,24 +50,29 @@ jobs:
       - name: Build
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
-            go build -tags turbojpeg -v ./...
+            go build -tags turbojpeg,usb -v ./...
           else
-            go build -v ./...
+            go build -tags usb -v ./...
           fi
         shell: bash
+
+      - name: Build without USB (pure Go, no cgo)
+        run: go build -v ./...
+        env:
+          CGO_ENABLED: "0"
 
       - name: Test
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
-            go test -tags turbojpeg -v ./...
+            go test -tags turbojpeg,usb -v ./...
           else
-            go test -v ./...
+            go test -tags usb -v ./...
           fi
         shell: bash
 
       - name: Test with race detector (Linux only)
         if: matrix.os == 'ubuntu-latest'
-        run: go test -tags turbojpeg -race ./...
+        run: go test -tags turbojpeg,usb -race ./...
 
   test-coverage:
     runs-on: ubuntu-latest
@@ -83,7 +88,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev libturbojpeg0-dev
 
       - name: Run tests with coverage
-        run: go test -tags turbojpeg -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -tags turbojpeg,usb -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Display coverage summary
         run: go tool cover -func=coverage.out | tail -1
@@ -109,7 +114,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
 
       - name: Run go vet
-        run: go vet ./...
+        run: go vet -tags usb ./...
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v4

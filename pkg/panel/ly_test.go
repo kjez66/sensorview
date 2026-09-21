@@ -1,3 +1,5 @@
+//go:build usb
+
 package panel
 
 import (

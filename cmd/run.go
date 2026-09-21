@@ -1,3 +1,5 @@
+//go:build usb
+
 // cmd/run.go - Main dashboard run command
 package cmd
 

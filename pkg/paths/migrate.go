@@ -1,6 +1,7 @@
 package paths
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,14 +12,17 @@ import (
 // config, themes and browser cache under it.
 const legacyAppName = "sensorpanel"
 
-// MigrateLegacyDirs moves pre-rename sensorpanel directories to their sensorview
-// equivalents. Each directory is only moved when the new location does not
-// already exist, so a partially migrated install is left alone and a second run
-// is a no-op.
+// MigrateLegacyDirs merges pre-rename sensorpanel directories into their
+// sensorview equivalents.
 //
-// Config is migrated before data, and data before cache: on Windows the cache
-// lives inside the data directory, so moving the data directory carries the
-// cache with it and the cache step then finds its destination already present.
+// The merge is entry by entry rather than a single rename of the top-level
+// directory, because the new directory is easily created before a migration
+// ever runs - the test suite writes to the real cache directory, for one - and
+// a plain rename would then be skipped forever, stranding the old data.
+//
+// Nothing is ever overwritten: when both sides have the same path, a directory
+// is merged recursively and anything else is left as it is on the new side. The
+// legacy directory is removed once it is empty, so a second run is a no-op.
 func MigrateLegacyDirs() error {
 	steps := []struct {
 		name string
@@ -42,18 +46,18 @@ func MigrateLegacyDirs() error {
 	return nil
 }
 
-// migrateDir renames the legacy sibling of current to current, when the legacy
-// directory exists and current does not.
+// migrateDir merges the legacy sibling of current into current.
 func migrateDir(current string) error {
-	if _, err := os.Stat(current); err == nil {
+	legacy := filepath.Join(filepath.Dir(current), legacyAppName)
+
+	// Guard against a legacy path that resolves to the directory itself, which
+	// would happen if appName were ever set to legacyAppName.
+	if legacy == current {
 		return nil
-	} else if !os.IsNotExist(err) {
-		return err
 	}
 
-	legacy := filepath.Join(filepath.Dir(current), legacyAppName)
 	info, err := os.Stat(legacy)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
@@ -63,9 +67,61 @@ func migrateDir(current string) error {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(current), 0755); err != nil {
+	if err := mergeTree(legacy, current); err != nil {
 		return err
 	}
 
-	return os.Rename(legacy, current)
+	// Only succeeds once everything has moved across.
+	if err := os.Remove(legacy); err != nil && !errors.Is(err, os.ErrNotExist) {
+		var pathErr *os.PathError
+		if !errors.As(err, &pathErr) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// mergeTree moves every entry under src into dst without overwriting. Entries
+// that exist on both sides are merged when both are directories and skipped
+// otherwise, leaving the dst copy in place.
+func mergeTree(src, dst string) error {
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		dstInfo, err := os.Stat(dstPath)
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			if err := os.Rename(srcPath, dstPath); err != nil {
+				return err
+			}
+		case err != nil:
+			return err
+		case dstInfo.IsDir() && entry.IsDir():
+			if err := mergeTree(srcPath, dstPath); err != nil {
+				return err
+			}
+			// Drop the source directory once its contents have moved.
+			if err := os.Remove(srcPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+				var pathErr *os.PathError
+				if !errors.As(err, &pathErr) {
+					return err
+				}
+			}
+		default:
+			// Same name on both sides and not two directories: keep the new one.
+		}
+	}
+
+	return nil
 }

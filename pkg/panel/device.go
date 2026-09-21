@@ -1,3 +1,5 @@
+//go:build usb
+
 // Package panel provides the USB device interface for AX206 displays.
 package panel
 

@@ -19,8 +19,7 @@ The usual setup is an old tablet or phone on your network: run 'sensorview serve
 open the printed address in its browser, and prop it up next to your desk. No app
 to install on the device, and no dedicated hardware to buy.
 
-AX206-based USB panels (480x320, RGB565) are still supported, inherited from the
-upstream project this is derived from - see 'sensorview device select'.`,
+` + usbSupportNote,
 	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		// Installations that predate the SensorPanel -> SensorView rename keep
 		// their config, themes and browser cache under the old directory name.

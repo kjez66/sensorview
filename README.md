@@ -36,7 +36,7 @@ Nothing to install on that device, and no dedicated hardware to buy.
 - **Cross-platform** - Runs on Linux, macOS and Windows; sensor coverage varies, see [Built-in Sensors](#built-in-sensors)
 - **Autostart service** - Install as system service on all platforms
 - **NixOS support** - Flake with module, udev rules, and systemd service
-- **USB panels too** - Inherited AX206 device profiles, regional updates, and an interactive wizard for new panels
+- **USB panels too** - Inherited AX206 device profiles, regional updates, and an interactive wizard for new panels, behind an opt-in `usb` build tag
 
 ## Quick Start
 
@@ -50,15 +50,40 @@ Nothing to install on that device, and no dedicated hardware to buy.
 | Display device | Anything with a modern browser, on the same network. No app install |
 | Network | Host and device on the same LAN; the host's inbound port must not be firewalled |
 
-**To build SensorView you need:**
+**To build it you need Go 1.24 or newer. That is all.**
 
-- **Go 1.24 or newer**
-- **A C toolchain and libusb.** These are required even if you never touch a USB
-  panel: the USB device-discovery code is compiled into the binary
-  unconditionally, so without them the build fails inside `gousb` with a list of
-  `undefined:` errors. That looks like a broken checkout but is a missing
-  toolchain.
-- **libturbojpeg** (Linux) for fast JPEG encoding.
+The default build is pure Go, with no cgo and no system libraries:
+
+```bash
+go build .
+```
+
+**Optional:**
+
+- **Node.js 18+** - only for developing themes (`sensorview theme dev`). Running a
+  prebuilt theme does not need it.
+- **Chrome** - downloaded automatically for the headless renderer. Native themes
+  (`--renderer native`) skip it entirely.
+- **[LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)**
+  (Windows) - needed for CPU/motherboard temperatures, fan speeds and voltages.
+  Without it you still get load, frequency, memory, disk, network and NVIDIA GPU.
+  See [Windows: temperatures, fans and voltages](#windows-temperatures-fans-and-voltages).
+
+#### Building with USB panel support
+
+USB panels are driven through `gousb`, which needs cgo and libusb. That support
+is behind the `usb` build tag, so it costs nothing unless you ask for it:
+
+```bash
+go build -tags usb .
+```
+
+Without the tag, `run`, `device`, `panel` and `benchmark` are still listed but
+report that the build has no USB support. With the tag you also need:
+
+- **A C toolchain** - cgo does not support MSVC, so Windows needs mingw-w64.
+- **libusb**
+- **libturbojpeg** (Linux only, with `-tags turbojpeg,usb`) for fast JPEG encoding.
 
 ```bash
 # Debian/Ubuntu
@@ -75,39 +100,28 @@ xcode-select --install
 brew install libusb pkg-config
 ```
 
-On Windows you need a gcc toolchain - cgo does not support MSVC - plus libusb.
-CI uses vcpkg:
+On Windows, MSYS2 provides both the compiler and libusb from one package
+manager:
 
 ```powershell
-# gcc, via scoop (or install MSYS2 and use its mingw-w64 toolchain)
-scoop install mingw
+winget install MSYS2.MSYS2
+C:\msys64\usr\bin\pacman -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
 
-# libusb, via vcpkg
-vcpkg integrate install
-vcpkg install libusb:x64-windows
+$env:Path = "C:\msys64\mingw64\bin;$env:Path"
+$env:CGO_ENABLED = "1"
+go build -tags usb .
 ```
 
-Then, in the shell you build from:
+CI uses vcpkg instead, which is equivalent:
 
 ```powershell
+vcpkg integrate install
+vcpkg install libusb:x64-windows
+
 $env:CGO_ENABLED = "1"
 $env:CGO_CFLAGS  = "-IC:/vcpkg/installed/x64-windows/include/libusb-1.0"
 $env:CGO_LDFLAGS = "-LC:/vcpkg/installed/x64-windows/lib -lusb-1.0"
 ```
-
-**Optional:**
-
-- **Node.js 18+** - only for developing themes (`sensorview theme dev`). Running a
-  prebuilt theme does not need it.
-- **Chrome** - downloaded automatically for the headless renderer. Native themes
-  (`--renderer native`) skip it entirely.
-- **[LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)**
-  (Windows) - needed for CPU/motherboard temperatures, fan speeds and voltages.
-  See [Windows: temperatures, fans and voltages](#windows-temperatures-fans-and-voltages).
-
-The sensor, theme and server packages need no cgo at all, so
-`go test ./pkg/sensors/... ./pkg/theme/... ./pkg/display/...` works on a bare
-checkout. Only building the binary needs libusb.
 
 ### 1. Build
 
@@ -120,6 +134,9 @@ mage build
 
 # Or directly with Go
 go build .
+
+# With USB panel support (needs a C toolchain and libusb)
+go build -tags usb .
 
 # Or with Nix
 nix build
@@ -153,7 +170,8 @@ need an inbound firewall rule for the port.
 
 ### 3. (Optional) Drive a USB panel instead
 
-Inherited from the upstream project, and still fully supported:
+Inherited from the upstream project, and still fully supported - but only in a
+build made with `-tags usb`, see [Building with USB panel support](#building-with-usb-panel-support):
 
 ```bash
 ./sensorview device list     # See available devices
@@ -208,9 +226,9 @@ Inherited from the upstream project, and still fully supported:
 The primary "device" is any browser on your network - see
 [Serve a Theme to a Browser](#serve-a-theme-to-a-browser). No profile needed.
 
-For USB LCD panels, SensorView keeps the modular device profile system it
-inherited from [oae/sensorpanel](https://github.com/oae/sensorpanel). Currently
-supported:
+For USB LCD panels (builds made with `-tags usb`), SensorView keeps the modular
+device profile system it inherited from
+[oae/sensorpanel](https://github.com/oae/sensorpanel). Currently supported:
 
 | Device | Resolution | Color Format | Notes |
 |--------|------------|--------------|-------|
@@ -790,12 +808,13 @@ On macOS these live under `~/Library/Application Support/sensorview/` and
 `~/Library/Caches/sensorview/`; on Windows under `%APPDATA%sensorview` and
 `%LOCALAPPDATA%sensorview`.
 
-**Upgrading from SensorPanel?** The first run of any `sensorview` command moves
-the old `sensorpanel` directories to their `sensorview` equivalents, so your
-device selection, themes and browser cache carry over. A directory is only moved
-when the new one does not already exist, so nothing is ever overwritten. An
-installed autostart service is *not* migrated - run `sensorview service install`
-again after uninstalling the old one.
+**Upgrading from SensorPanel?** The first run of any `sensorview` command merges
+the old `sensorpanel` directories into their `sensorview` equivalents, so your
+device selection, themes and browser cache carry over. The merge is entry by
+entry and never overwrites: where the same path exists on both sides, directories
+are merged recursively and anything else keeps the newer copy, leaving the old
+one behind. An installed autostart service is *not* migrated - run
+`sensorview service install` again after uninstalling the old one.
 
 ## Architecture
 

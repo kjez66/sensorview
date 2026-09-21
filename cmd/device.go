@@ -1,3 +1,5 @@
+//go:build usb
+
 // cmd/device.go - USB device management commands
 package cmd
 
