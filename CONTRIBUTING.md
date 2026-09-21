@@ -11,7 +11,7 @@ Thank you for your interest in contributing!
 
 2. Clone and build:
    ```bash
-   git clone https://github.com/alperen/sensorview.git
+   git clone https://github.com/kjez66/sensorview.git
    cd sensorview
    go build .
    ```

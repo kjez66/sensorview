@@ -35,3 +35,7 @@ test_preview.png
 session-*.md
 MEMORY.md
 TODO.md
+
+# Test coverage output
+coverage.out
+coverage.html

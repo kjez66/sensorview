@@ -737,7 +737,7 @@ See [docs/creating-themes.md](docs/creating-themes.md) for the full guide.
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    sensorview.url = "github:alperen/sensorview";
+    sensorview.url = "github:kjez66/sensorview";
   };
 
   outputs = { self, nixpkgs, sensorview, ... }: {
