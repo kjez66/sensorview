@@ -181,24 +181,90 @@ export default tseslint.config(
 `
 }
 
+// Themes are authored against a fixed panel canvas. panelWidth and panelHeight
+// are that canvas; the shell below scales it to whatever screen the theme is
+// viewed on, so one theme fills both a 480x320 USB panel and a phone browser.
+const (
+	panelWidth  = 480
+	panelHeight = 320
+)
+
+// panelViewportMeta lets the page use the device's own viewport. Pinning it to
+// the panel size instead - as themes did when a USB panel was the only target -
+// leaves a phone showing a clipped, unscrollable corner of the dashboard.
+func panelViewportMeta() string {
+	return `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />`
+}
+
+// panelShellCSS centres the dashboard and scales it by --panel-scale, which
+// panelFitScript keeps in step with the viewport. selector is the element
+// holding the dashboard.
+//
+// Every rule is qualified with "html body" on purpose. Themes written for a USB
+// panel commonly claim the whole screen with "html, body, #root { width: 100vw;
+// height: 100vh }", and a theme's own stylesheet loads after this shell - so an
+// unqualified "#root" rule here ties on specificity and loses on order. The
+// panel then fills the viewport *and* gets scaled, rendering several times too
+// large. The extra element selectors win regardless of load order.
+// The panel is centred with fixed positioning rather than a centring layout:
+// grid and flex clamp an item WIDER than its container to the start edge instead
+// of centring it, which on a narrow phone left the scaled panel offset and
+// hanging off the right edge.
+func panelShellCSS(selector string) string {
+	return fmt.Sprintf(`      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%%; height: 100%%; overflow: hidden; background: #000; }
+      html body %s {
+        position: fixed;
+        left: 50%%;
+        top: 50%%;
+        width: %dpx;
+        height: %dpx;
+        min-width: %dpx;
+        min-height: %dpx;
+        max-width: %dpx;
+        max-height: %dpx;
+        overflow: hidden;
+        transform: translate(-50%%, -50%%) scale(var(--panel-scale, 1));
+        transform-origin: center center;
+      }`, selector, panelWidth, panelHeight, panelWidth, panelHeight, panelWidth, panelHeight)
+}
+
+// panelFitScript recomputes the scale that fits the panel canvas inside the
+// viewport, preserving aspect ratio, on load and whenever the window changes.
+func panelFitScript() string {
+	return fmt.Sprintf(`<script>
+      (function () {
+        var w = %d, h = %d;
+        function fit() {
+          var scale = Math.min(window.innerWidth / w, window.innerHeight / h);
+          document.documentElement.style.setProperty('--panel-scale', String(scale));
+        }
+        fit();
+        window.addEventListener('resize', fit);
+        window.addEventListener('orientationchange', fit);
+        window.addEventListener('load', fit);
+      })();
+    </script>`, panelWidth, panelHeight)
+}
+
 func indexHTML(name string) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=480, height=320, initial-scale=1.0" />
+    %s
     <title>%s - SensorView</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body, #root { width: 480px; height: 320px; overflow: hidden; }
+%s
     </style>
+    %s
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-`, name)
+`, panelViewportMeta(), name, panelShellCSS("#root"), panelFitScript())
 }
 
 func gitignore() string {
@@ -809,7 +875,7 @@ func distIndexHTML(name string) string {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=480, height=320, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>%s - SensorView</title>
   <style>
     :root {
@@ -822,8 +888,9 @@ func distIndexHTML(name string) string {
       --accent-ram: #533483;
       --accent-network: #1a508b;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 480px; height: 320px; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-primary); }
+%s
+    html body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text-primary); }
+    html body #app { background: var(--bg-color); }
     .status { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%%; font-size: 18px; text-align: center; }
     .status.error { color: var(--accent-cpu); }
     .status small { margin-top: 8px; color: var(--text-secondary); font-size: 12px; }
@@ -841,6 +908,19 @@ func distIndexHTML(name string) string {
     .net-rx { color: #00ff88; }
     .net-tx { color: #ff8800; }
   </style>
+  <script>
+    (function () {
+      var w = 480, h = 320;
+      function fit() {
+        var scale = Math.min(window.innerWidth / w, window.innerHeight / h);
+        document.documentElement.style.setProperty("--panel-scale", String(scale));
+      }
+      fit();
+      window.addEventListener("resize", fit);
+      window.addEventListener("orientationchange", fit);
+      window.addEventListener("load", fit);
+    })();
+  </script>
 </head>
 <body>
   <div id="app" class="status">Connecting to SensorView...</div>
@@ -971,5 +1051,5 @@ func distIndexHTML(name string) string {
   </script>
 </body>
 </html>
-`, name)
+`, name, panelShellCSS("#app"))
 }

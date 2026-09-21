@@ -2,12 +2,51 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=480, height=320, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>NeonPulse - SensorView</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body, #root { width: 480px; height: 320px; overflow: hidden; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+      /* Authored at 480x320 and scaled to fit whatever screen shows it, so a
+         phone gets the whole dashboard rather than a clipped, unscrollable
+         corner.
+
+         Qualified with "html body" deliberately: the theme's own stylesheet
+         loads after this one and claims "html, body, #root { width: 100vw;
+         height: 100vh }". An unqualified "#root" here would tie on specificity
+         and lose on order, leaving the panel viewport-sized AND scaled.
+
+         Centred with fixed positioning rather than grid or flex: those clamp an
+         item wider than its container to the start edge instead of centring it,
+         which left the panel hanging off the right edge of a narrow phone. */
+      html body #root {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: 480px;
+        height: 320px;
+        min-width: 480px;
+        min-height: 320px;
+        max-width: 480px;
+        max-height: 320px;
+        overflow: hidden;
+        transform: translate(-50%, -50%) scale(var(--panel-scale, 1));
+        transform-origin: center center;
+      }
     </style>
+    <script>
+      (function () {
+        var w = 480, h = 320;
+        function fit() {
+          var scale = Math.min(window.innerWidth / w, window.innerHeight / h);
+          document.documentElement.style.setProperty('--panel-scale', String(scale));
+        }
+        fit();
+        window.addEventListener('resize', fit);
+        window.addEventListener('orientationchange', fit);
+        window.addEventListener('load', fit);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

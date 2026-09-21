@@ -711,8 +711,16 @@ For a panel you leave running, prefer [`sensorview serve`](#serve-a-theme-to-a-b
 over `theme dev`: it serves the built theme from the single binary, with no Node
 process alive.
 
-Themes are authored at 480x320 with fixed pixel sizes. On a phone, either author
-at the device's resolution or scale the root element with a CSS `transform`.
+Themes are authored against a fixed 480x320 canvas. The generated shell scales
+that canvas to fit whatever screen opens it and centres it, so a phone or tablet
+shows the whole dashboard without scrolling, at any orientation. Nothing in the
+theme itself needs to be responsive.
+
+If you wrote a theme before this, its `index.html` may still pin the viewport to
+`width=480, height=320` and set `overflow: hidden` on `#root`, which leaves a
+phone showing a clipped corner it cannot scroll. Recreating the shell from
+`sensorview theme create` - or copying the `<style>` and `<script>` blocks from a
+current theme - fixes it.
 
 ### Using the SDK
 
