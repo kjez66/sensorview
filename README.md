@@ -50,7 +50,7 @@ Nothing to install on that device, and no dedicated hardware to buy.
 | Display device | Anything with a modern browser, on the same network. No app install |
 | Network | Host and device on the same LAN; the host's inbound port must not be firewalled |
 
-**To build it you need Go 1.24 or newer. That is all.**
+**To build it you need Go 1.26 or newer. That is all.**
 
 The default build is pure Go, with no cgo and no system libraries:
 
