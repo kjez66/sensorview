@@ -46,10 +46,12 @@ func NewEncoder(config Config) (Encoder, error) {
 	if config.Backend == "" {
 		config.Backend = "auto"
 	}
-	if config.Backend == "auto" && turboAvailable() {
-		encoder, err := newTurboEncoder(config)
-		if err == nil {
-			return encoder, nil
+	if config.Backend == "auto" {
+		if turboAvailable() {
+			encoder, err := newTurboEncoder(config)
+			if err == nil {
+				return encoder, nil
+			}
 		}
 		config.Backend = "stdlib"
 	}

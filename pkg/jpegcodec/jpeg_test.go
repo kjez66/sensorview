@@ -55,3 +55,26 @@ func TestRotateJPEGDimensions(t *testing.T) {
 		t.Fatalf("rotated dimensions = %dx%d, want 16x32", config.Width, config.Height)
 	}
 }
+
+// auto is the default everywhere, and must work in a build without TurboJPEG,
+// which is every Windows and macOS build.
+func TestAutoEncoderWorksWithoutTurboJPEG(t *testing.T) {
+	for _, backend := range []string{"auto", ""} {
+		encoder, err := NewEncoder(Config{Width: 8, Height: 8, Quality: 80, Backend: backend})
+		if err != nil {
+			t.Fatalf("NewEncoder(%q): %v", backend, err)
+		}
+		if !turboAvailable() && encoder.Name() != "stdlib" {
+			t.Errorf("NewEncoder(%q) = %s without TurboJPEG, want stdlib", backend, encoder.Name())
+		}
+		if _, err := encoder.Encode(image.NewRGBA(image.Rect(0, 0, 8, 8))); err != nil {
+			t.Errorf("Encode with %q: %v", backend, err)
+		}
+		encoder.Close()
+	}
+
+	var encoded bytes.Buffer
+	if _, err := Encode(&encoded, image.NewRGBA(image.Rect(0, 0, 8, 8)), 80, "auto"); err != nil {
+		t.Errorf("Encode helper with auto: %v", err)
+	}
+}
