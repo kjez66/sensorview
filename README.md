@@ -296,6 +296,9 @@ Flags:
       --addr string        Address to listen on (default 127.0.0.1:19847)
   -i, --interval float     Sensor update interval in seconds (default 1.0)
   -o, --opt strings        Sensor options (e.g., lhm.url=http://localhost:8085/data.json)
+      --management         Serve the local Management Studio (default true)
+      --management-address string
+                           Studio address (localhost only; default 127.0.0.1:19848)
 ```
 
 Build the theme first, then serve it:
@@ -329,13 +332,23 @@ its WebSocket meet on the same port with no query parameter needed.
 
 ### Management Studio
 
-Native themes can be created and edited without writing JSON. Start a native
-dashboard and open the embedded, localhost-only editor:
+Native themes can be created and edited without writing JSON, in the embedded,
+localhost-only editor. It works in every build, with or without USB support:
 
 ```bash
-sensorview run --renderer native
-sensorview ui
+sensorview ui                 # Opens the running Studio, or starts one until Ctrl+C
+sensorview serve trofeo       # Also starts the Studio; its address is printed on startup
 ```
+
+`serve` starts the Studio unless you pass `--management=false`. With a USB
+panel (`-tags usb`), `sensorview run --renderer native` starts it too.
+
+> **Native themes do not reach the phone yet.** The Studio edits native themes
+> (`native.theme.json`), which the Go renderer draws. `serve` shows the web
+> version of a theme (its built `dist/`), which is a separate design. So edits
+> made in the Studio appear in its **Native preview** and on a USB panel, but
+> not on a phone or tablet. Without a USB panel, **Apply to panel** saves the
+> theme and nothing more.
 
 The Studio provides a fixed-pixel free canvas, live sensor bindings, bars,
 gauges and history charts, static image/image-widget support, custom fonts,
@@ -406,7 +419,7 @@ sensorview theme sdk update [name] # Update SDK in existing theme
 sensorview theme browser install   # Download Chrome for Testing
 sensorview theme browser status    # Check browser availability
 sensorview theme browser remove    # Remove cached browser
-sensorview ui                      # Open the running native Management Studio
+sensorview ui                      # Open the Management Studio, starting one if none is running
 ```
 
 ### Panel Control

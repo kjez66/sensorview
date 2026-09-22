@@ -17,9 +17,11 @@ import (
 )
 
 var (
-	serveAddr     string
-	serveInterval float64
-	serveOpts     []string
+	serveAddr           string
+	serveInterval       float64
+	serveOpts           []string
+	serveManagement     bool
+	serveManagementAddr string
 )
 
 var serveCmd = &cobra.Command{
@@ -38,7 +40,11 @@ bind every interface:
 
 The addresses to open are printed on startup. Note that the sensor feed has no
 authentication, so anyone who can reach that port can read your system metrics;
-bind wider only on a network you trust.`,
+bind wider only on a network you trust.
+
+The Management Studio for editing native themes also starts, on
+127.0.0.1:19848 by default and never on the network. Pass --management=false
+to leave it out.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		themeName, err := resolveServeTheme(args)
@@ -59,17 +65,35 @@ bind wider only on a network you trust.`,
 			return err
 		}
 
+		// Set before Run, which is what calls OnReady.
+		studioURL := ""
 		srv, err := display.New(display.Options{
 			DistDir:       t.DistDir(),
 			Address:       serveAddr,
 			Interval:      time.Duration(serveInterval * float64(time.Second)),
 			SensorOptions: sensorOptions,
 			OnReady: func(ready *display.Server) {
-				printServeBanner(themeName, ready)
+				printServeBanner(themeName, ready, studioURL)
 			},
 		})
 		if err != nil {
 			return err
+		}
+
+		cfg, _ := config.Load()
+		enabled, address := studioSettings(cfg,
+			serveManagement, cmd.Flags().Changed("management"),
+			serveManagementAddr, cmd.Flags().Changed("management-address"))
+		if enabled {
+			// A Studio that cannot start, typically because run or another serve
+			// already holds the port, is not a reason to stop serving the panel.
+			manager, err := startStudio(address, srv.Collector(), themeName, studioModeServe)
+			if err != nil {
+				fmt.Printf("[serve] Warning: Management Studio unavailable: %v\n", err)
+			} else {
+				defer manager.Close()
+				studioURL = manager.URL()
+			}
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -136,7 +160,7 @@ func serveSensorOptions() (map[string]interface{}, error) {
 }
 
 // printServeBanner reports where the panel can be opened.
-func printServeBanner(themeName string, srv *display.Server) {
+func printServeBanner(themeName string, srv *display.Server, studioURL string) {
 	fmt.Printf("Serving theme: %s\n", themeName)
 	if local := srv.LocalURL(); local != "" {
 		fmt.Printf("[serve] Local:     %s\n", local)
@@ -152,6 +176,9 @@ func printServeBanner(themeName string, srv *display.Server) {
 	if srv.Exposed() {
 		fmt.Println("[serve] Warning: sensor readings are served without authentication to anyone on this network")
 	}
+	if studioURL != "" {
+		fmt.Printf("[serve] Studio:    %s  (this machine only)\n", studioURL)
+	}
 	fmt.Println("[serve] Press Ctrl+C to stop")
 }
 
@@ -159,6 +186,8 @@ func init() {
 	serveCmd.Flags().StringVar(&serveAddr, "addr", display.DefaultAddress, "Address to listen on (use 0.0.0.0:19847 to allow other devices)")
 	serveCmd.Flags().Float64VarP(&serveInterval, "interval", "i", 1.0, "Sensor update interval in seconds")
 	serveCmd.Flags().StringSliceVarP(&serveOpts, "opt", "o", nil, "Sensor options in key=value format (e.g., lhm.url=http://localhost:8085/data.json)")
+	serveCmd.Flags().BoolVar(&serveManagement, "management", true, "Serve the local Management Studio")
+	serveCmd.Flags().StringVar(&serveManagementAddr, "management-address", "", "Management Studio address (localhost only; default "+defaultStudioAddress+")")
 
 	rootCmd.AddCommand(serveCmd)
 }

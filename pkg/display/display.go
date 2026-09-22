@@ -132,6 +132,12 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 }
 
+// Collector returns the sensor collector feeding the display, so the Management
+// Studio can show the same readings without polling the hardware twice.
+func (s *Server) Collector() *sensors.Collector {
+	return s.collector
+}
+
 // Address returns the host:port being served, or an empty string before Run.
 func (s *Server) Address() string {
 	s.mu.Lock()

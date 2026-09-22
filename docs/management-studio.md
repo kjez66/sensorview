@@ -1,22 +1,43 @@
 # Management Studio
 
-SensorView Studio is an embedded visual editor for native themes. It runs in
-the same process as the USB render loop, previews through the native Go
-renderer, and applies a validated theme at a frame boundary without restarting
-the service.
+SensorView Studio is an embedded visual editor for native themes. It previews
+through the native Go renderer. With a USB panel it runs in the same process as
+the render loop and applies a validated theme at a frame boundary without
+restarting the service.
 
 ## Start it
 
-Select a theme with `native.theme.json`, then run:
+The Studio is part of every build, with or without USB support. Any of these
+starts it:
 
 ```bash
-sensorview run --renderer native
-sensorview ui
+sensorview ui                     # opens the running Studio, or starts one until Ctrl+C
+sensorview serve trofeo           # starts it alongside the phone/tablet display
+sensorview run --renderer native  # USB builds only (-tags usb)
 ```
 
-The default address is `http://127.0.0.1:19848`. The run process must remain
-active because it owns both the USB device and Studio server. To disable the
-server use `--management=false`.
+The default address is `http://127.0.0.1:19848`. Only one process can hold it,
+so `serve` prints a warning and carries on without a Studio when `run` or
+another `serve` already has one. `sensorview ui` opens whichever is running.
+To leave the Studio out of `serve` or `run`, pass `--management=false`.
+`sensorview ui --no-browser` prints the address instead of opening a browser.
+
+The Studio opens on the configured theme when it is a native one, and otherwise
+on the first installed native theme. Web-only themes are not listed.
+
+### Without a USB panel
+
+`serve` shows the web version of a theme, from its built `dist/` directory.
+The Studio edits the native version in `native.theme.json`, which is a separate
+design drawn by the Go renderer. So with `serve`:
+
+- **Native preview** shows your edits exactly as the Go renderer draws them.
+- **Apply to panel** validates and saves the theme. There is no panel to
+  reload, so nothing else changes.
+- The phone or tablet keeps showing the web version and does not see the edits.
+
+Panel settings such as brightness and orientation are saved but have no effect
+without a panel.
 
 The persistent settings are:
 
