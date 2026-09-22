@@ -9,7 +9,9 @@ Turn the old tablet or phone in your drawer into a real-time system monitor.
 SensorView runs on your PC, reads its sensors, and serves a live dashboard over
 your local network. The second screen is any device with a browser - an ageing
 iPad, a retired Android phone, a spare laptop - propped up next to your desk.
-Nothing to install on that device, and no dedicated hardware to buy.
+Nothing to install on that device, and no dedicated hardware to buy. So far
+only an Android phone running Chrome has been tested as the screen; see
+[Tested so far](#tested-so-far).
 
 > Derived from [oae/sensorpanel](https://github.com/oae/sensorpanel), which
 > targets cheap AX206 USB LCD panels. Those panels still work here (see
@@ -167,6 +169,18 @@ need an inbound firewall rule for the port.
 > **The sensor feed has no authentication.** Anyone who can reach that port can
 > read your system metrics. The default (`127.0.0.1:19847`) binds loopback only;
 > widen it only on a network you trust.
+
+#### Tested so far
+
+The phone/tablet display has been tested in one setup only:
+
+| Side | Tested with |
+|------|-------------|
+| Screen | Android, Chrome |
+| PC | Windows 11, Intel CPU, NVIDIA GeForce RTX 50-series GPU |
+
+Everything else is untested. That includes Safari on an iPad or iPhone, other
+Android browsers, Linux and macOS hosts, AMD CPUs, and other GPUs.
 
 ### 3. (Optional) Drive a USB panel instead
 
