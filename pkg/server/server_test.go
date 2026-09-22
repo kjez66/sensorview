@@ -21,8 +21,8 @@ func TestNew(t *testing.T) {
 	if s.distDir != "/some/path" {
 		t.Errorf("expected distDir '/some/path', got %q", s.distDir)
 	}
-	if s.clients == nil {
-		t.Error("expected clients map to be initialized")
+	if s.hub == nil {
+		t.Error("expected client hub to be initialized")
 	}
 }
 

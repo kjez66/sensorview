@@ -25,9 +25,9 @@ type Server struct {
 	distDir  string
 	addr     string
 
-	// WebSocket connections
-	clients   map[*websocket.Conn]bool
-	clientsMu sync.RWMutex
+	// hub holds the WebSocket clients of the current listener. Each Start gets a
+	// fresh one, because Stop closes it for good.
+	hub *Hub
 
 	upgrader websocket.Upgrader
 }
@@ -44,7 +44,7 @@ func NewWithAddress(distDir, addr string) *Server {
 	return &Server{
 		distDir: distDir,
 		addr:    addr,
-		clients: make(map[*websocket.Conn]bool),
+		hub:     NewHub(),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true // Allow all origins for local development
@@ -68,6 +68,9 @@ func (s *Server) Start() error {
 	}
 	s.listener = listener
 
+	hub := NewHub()
+	s.hub = hub
+
 	mux := http.NewServeMux()
 
 	// Serve static files from dist directory
@@ -75,7 +78,9 @@ func (s *Server) Start() error {
 	mux.Handle("/", fs)
 
 	// WebSocket endpoint for sensor data
-	mux.HandleFunc("/ws", s.handleWebSocket)
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		s.handleWebSocket(w, r, hub)
+	})
 
 	s.server = &http.Server{
 		Handler: mux,
@@ -124,12 +129,7 @@ func (s *Server) Stop() error {
 	defer s.mu.Unlock()
 
 	// Close all WebSocket clients
-	s.clientsMu.Lock()
-	for client := range s.clients {
-		client.Close()
-	}
-	s.clients = make(map[*websocket.Conn]bool)
-	s.clientsMu.Unlock()
+	s.hub.Close()
 
 	if s.server != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -146,59 +146,37 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-// handleWebSocket handles WebSocket connections for sensor data.
-func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+// handleWebSocket handles WebSocket connections for sensor data, serving each
+// until it disconnects.
+func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
-
-	s.clientsMu.Lock()
-	s.clients[conn] = true
-	s.clientsMu.Unlock()
-
-	// Keep connection alive, remove on close
-	defer func() {
-		s.clientsMu.Lock()
-		delete(s.clients, conn)
-		s.clientsMu.Unlock()
-		conn.Close()
-	}()
-
-	// Read loop (to detect disconnection)
-	for {
-		_, _, err := conn.ReadMessage()
-		if err != nil {
-			break
-		}
-	}
+	hub.Serve(conn)
 }
 
-// BroadcastSensorData sends sensor data to all connected WebSocket clients.
+// currentHub returns the hub of the running listener.
+func (s *Server) currentHub() *Hub {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.hub
+}
+
+// BroadcastSensorData sends sensor data to all connected WebSocket clients. It
+// queues the message and returns without waiting on any client, so one that has
+// stopped reading cannot stall the others or the caller.
 func (s *Server) BroadcastSensorData(data interface{}) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	// Use full lock since websocket.Conn.WriteMessage is not concurrent-safe
-	s.clientsMu.Lock()
-	defer s.clientsMu.Unlock()
-
-	for client := range s.clients {
-		err := client.WriteMessage(websocket.TextMessage, jsonData)
-		if err != nil {
-			// Client disconnected, will be cleaned up by read loop
-			continue
-		}
-	}
-
+	s.currentHub().Broadcast(jsonData)
 	return nil
 }
 
 // ClientCount returns the number of connected WebSocket clients.
 func (s *Server) ClientCount() int {
-	s.clientsMu.RLock()
-	defer s.clientsMu.RUnlock()
-	return len(s.clients)
+	return s.currentHub().Len()
 }

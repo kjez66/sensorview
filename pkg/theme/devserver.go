@@ -11,13 +11,13 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 
 	"github.com/kjez66/sensorview/pkg/lan"
 	"github.com/kjez66/sensorview/pkg/sensors"
+	"github.com/kjez66/sensorview/pkg/server"
 )
 
 // DevServer orchestrates the theme development experience.
@@ -30,23 +30,22 @@ type DevServer struct {
 	SensorOptions map[string]interface{} // Sensor provider options
 
 	// Internal state
-	wsServer    *http.Server
-	wsClients   map[*websocket.Conn]bool
-	wsClientsMu sync.RWMutex
-	viteCmd     *exec.Cmd
-	collector   *sensors.Collector
-	ctx         context.Context
-	cancel      context.CancelFunc
+	wsServer  *http.Server
+	wsHub     *server.Hub
+	viteCmd   *exec.Cmd
+	collector *sensors.Collector
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // NewDevServer creates a new dev server for a theme.
 func NewDevServer(themeDir string) *DevServer {
 	return &DevServer{
-		ThemeDir:  themeDir,
-		WSPort:    19847,
-		VitePort:  15173,
-		Interval:  1.0,
-		wsClients: make(map[*websocket.Conn]bool),
+		ThemeDir: themeDir,
+		WSPort:   19847,
+		VitePort: 15173,
+		Interval: 1.0,
+		wsHub:    server.NewHub(),
 	}
 }
 
@@ -153,12 +152,7 @@ func (d *DevServer) Stop() {
 	}
 
 	// Close WebSocket clients
-	d.wsClientsMu.Lock()
-	for conn := range d.wsClients {
-		conn.Close()
-	}
-	d.wsClients = make(map[*websocket.Conn]bool)
-	d.wsClientsMu.Unlock()
+	d.wsHub.Close()
 
 	fmt.Println("[dev] Stopped")
 }
@@ -185,29 +179,11 @@ func (d *DevServer) startWSServer() error {
 			return
 		}
 
-		d.wsClientsMu.Lock()
-		d.wsClients[conn] = true
-		d.wsClientsMu.Unlock()
-
 		fmt.Printf("[ws] Client connected from %s\n", r.RemoteAddr)
 
-		// Keep connection open, handle disconnects
-		go func() {
-			defer func() {
-				d.wsClientsMu.Lock()
-				delete(d.wsClients, conn)
-				d.wsClientsMu.Unlock()
-				conn.Close()
-				fmt.Printf("[ws] Client disconnected\n")
-			}()
-
-			for {
-				_, _, err := conn.ReadMessage()
-				if err != nil {
-					return
-				}
-			}
-		}()
+		// Serve blocks until the client disconnects or stops responding.
+		d.wsHub.Serve(conn)
+		fmt.Printf("[ws] Client disconnected\n")
 	})
 
 	d.wsServer = &http.Server{
@@ -305,15 +281,7 @@ func (d *DevServer) broadcastSensorData() {
 		return
 	}
 
-	d.wsClientsMu.RLock()
-	defer d.wsClientsMu.RUnlock()
-
-	for conn := range d.wsClients {
-		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-			// Client will be cleaned up by the read goroutine
-			continue
-		}
-	}
+	d.wsHub.Broadcast(msg)
 }
 
 // findAvailablePort finds an available port starting from startPort.
