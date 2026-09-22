@@ -7,8 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -152,12 +154,48 @@ func (s *Server) Port() int {
 	return s.http.Port()
 }
 
+// LocalURL returns the address to open on this machine, or an empty string when
+// the listener does not accept loopback connections because it is bound to one
+// specific network address. Use URLs in that case.
+func (s *Server) LocalURL() string {
+	ip, port, ok := listeningIP(s.Address())
+	if !ok || !(ip.IsLoopback() || ip.IsUnspecified()) {
+		return ""
+	}
+	return fmt.Sprintf("http://localhost:%d/?ws=%d", port, port)
+}
+
+// Exposed reports whether other devices can connect, which means the
+// unauthenticated sensor feed is readable from the network.
+func (s *Server) Exposed() bool {
+	ip, _, ok := listeningIP(s.Address())
+	return ok && !ip.IsLoopback()
+}
+
+// listeningIP splits a listener address into its IP and port.
+func listeningIP(address string) (net.IP, int, bool) {
+	host, portText, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, 0, false
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil || port == 0 {
+		return nil, 0, false
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return nil, 0, false
+	}
+	return ip, port, true
+}
+
 // URLs lists the addresses another device on the network can open. The page and
 // its WebSocket share one listener, so each URL points the theme at the port it
-// was loaded from.
+// was loaded from. Only addresses the listener actually accepts are listed, so a
+// server on loopback reports none.
 func (s *Server) URLs() []URLEntry {
-	port := s.Port()
-	if port == 0 {
+	address := s.Address()
+	if address == "" {
 		return nil
 	}
 
@@ -166,12 +204,41 @@ func (s *Server) URLs() []URLEntry {
 		return nil
 	}
 
-	addresses := lan.Addresses(interfaces)
-	entries := make([]URLEntry, 0, len(addresses))
-	for _, address := range addresses {
+	return reachableURLs(address, lan.Addresses(interfaces))
+}
+
+// boundInterfaceLabel names a listening address that no interface reports, such
+// as an IPv6 or link-local one, so it can still be printed.
+const boundInterfaceLabel = "listening address"
+
+// reachableURLs narrows the host's LAN addresses to those a listener on address
+// accepts connections on: none on loopback, all of them on a wildcard, and only
+// the matching one on a specific address.
+func reachableURLs(address string, addresses []lan.Address) []URLEntry {
+	ip, port, ok := listeningIP(address)
+	if !ok || ip.IsLoopback() {
+		return nil
+	}
+
+	var matched []lan.Address
+	if ip.IsUnspecified() {
+		matched = addresses
+	} else {
+		for _, candidate := range addresses {
+			if candidate.IP == ip.String() {
+				matched = append(matched, candidate)
+			}
+		}
+		if len(matched) == 0 {
+			matched = []lan.Address{{Interface: boundInterfaceLabel, IP: ip.String()}}
+		}
+	}
+
+	entries := make([]URLEntry, 0, len(matched))
+	for _, candidate := range matched {
 		entries = append(entries, URLEntry{
-			Interface: address.Interface,
-			URL:       lan.URL(address, port, port),
+			Interface: candidate.Interface,
+			URL:       lan.URL(candidate, port, port),
 		})
 	}
 	return entries

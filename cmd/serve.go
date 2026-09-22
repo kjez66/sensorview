@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 	"strings"
@@ -138,35 +137,22 @@ func serveSensorOptions() (map[string]interface{}, error) {
 
 // printServeBanner reports where the panel can be opened.
 func printServeBanner(themeName string, srv *display.Server) {
-	port := srv.Port()
-
 	fmt.Printf("Serving theme: %s\n", themeName)
-	fmt.Printf("[serve] Local:     http://localhost:%d/?ws=%d\n", port, port)
+	if local := srv.LocalURL(); local != "" {
+		fmt.Printf("[serve] Local:     %s\n", local)
+	}
 
-	urls := srv.URLs()
-	if len(urls) == 0 {
+	if !srv.Exposed() {
 		fmt.Println("[serve] Listening on loopback only; pass --addr 0.0.0.0:19847 to use another device as the panel")
 	}
-	for _, entry := range urls {
+	for _, entry := range srv.URLs() {
 		fmt.Printf("[serve] Phone/LAN: %s  (%s)\n", entry.URL, entry.Interface)
 	}
 
-	if isWildcardAddress(srv.Address()) {
+	if srv.Exposed() {
 		fmt.Println("[serve] Warning: sensor readings are served without authentication to anyone on this network")
 	}
 	fmt.Println("[serve] Press Ctrl+C to stop")
-}
-
-// isWildcardAddress reports whether the listener accepts connections from off
-// this machine.
-func isWildcardAddress(address string) bool {
-	host, _, err := net.SplitHostPort(address)
-	if err != nil {
-		return false
-	}
-
-	ip := net.ParseIP(host)
-	return ip != nil && ip.IsUnspecified()
 }
 
 func init() {

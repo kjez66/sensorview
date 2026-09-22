@@ -5,6 +5,7 @@ package lan
 import (
 	"fmt"
 	"net"
+	"strconv"
 )
 
 // Address is one address this host can be reached on from another
@@ -88,7 +89,8 @@ func addrIPv4(addr net.Addr) net.IP {
 
 // URL returns the address to open on another device. The sensor port is
 // named explicitly so the theme SDK connects straight away instead of probing
-// the port range.
+// the port range. The host is bracketed when it is an IPv6 address.
 func URL(address Address, vitePort, wsPort int) string {
-	return fmt.Sprintf("http://%s:%d/?ws=%d", address.IP, vitePort, wsPort)
+	host := net.JoinHostPort(address.IP, strconv.Itoa(vitePort))
+	return fmt.Sprintf("http://%s/?ws=%d", host, wsPort)
 }

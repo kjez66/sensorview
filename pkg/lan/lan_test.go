@@ -120,3 +120,13 @@ func TestSystemInterfacesReportsThisHost(t *testing.T) {
 		t.Logf("reachable on %s (%s)", URL(address, 15173, 19847), address.Interface)
 	}
 }
+
+func TestURLBracketsIPv6(t *testing.T) {
+	t.Parallel()
+
+	got := URL(Address{Interface: "Ethernet", IP: "fe80::1"}, 19847, 19847)
+
+	if got != "http://[fe80::1]:19847/?ws=19847" {
+		t.Errorf("URL = %q, want http://[fe80::1]:19847/?ws=19847", got)
+	}
+}
