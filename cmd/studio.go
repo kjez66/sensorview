@@ -16,27 +16,46 @@ const (
 	studioModeStandalone = "standalone"
 )
 
-// startStudio starts the Management Studio without a USB panel. There is no
-// render loop to hot-reload, so Apply saves the theme and takes effect the next
-// time it is rendered; the USB build wires a reload in from run instead.
+// studioOptions configures a Studio started without a USB panel.
+type studioOptions struct {
+	address   string
+	collector *sensors.Collector
+
+	// preferredTheme is the theme to open, when it is a native one.
+	preferredTheme string
+
+	// mode and renderer are reported by the status endpoint.
+	mode     string
+	renderer string
+
+	// applyTheme runs after Apply has validated and saved a theme, and may
+	// redraw a display showing it. An error makes the Studio restore the
+	// previous file. When nil, saving is all Apply does.
+	applyTheme func(name string) error
+}
+
+// startStudio starts the Management Studio without a USB panel; run wires in
+// its own with the panel reload.
 //
 // The Studio only edits native themes and fails to load if its active theme is
 // not one, so the active theme is the preferred one when that is native and
 // otherwise the first native theme installed.
-func startStudio(address string, collector *sensors.Collector, preferredTheme, mode string) (*management.Server, error) {
+func startStudio(options studioOptions) (*management.Server, error) {
 	installed, err := theme.List()
 	if err != nil {
 		installed = nil
 	}
-	active := newStudioActiveTheme(pickStudioTheme(preferredTheme, installed))
+	active := newStudioActiveTheme(pickStudioTheme(options.preferredTheme, installed))
 
 	manager, err := management.New(management.Options{
-		Address:     address,
-		Collector:   collector,
+		Address:     options.address,
+		Collector:   options.collector,
 		ActiveTheme: active.get,
+		ApplyTheme:  options.applyTheme,
 		Status: func() any {
 			return map[string]any{
-				"state": "running", "theme": active.get(), "renderer": "none", "mode": mode,
+				"state": "running", "theme": active.get(),
+				"renderer": options.renderer, "mode": options.mode,
 			}
 		},
 		// Switching theme in the Studio saves the config; follow it so a page

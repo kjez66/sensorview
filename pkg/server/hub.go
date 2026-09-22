@@ -36,10 +36,45 @@ type Hub struct {
 	pingInterval time.Duration
 	pongWait     time.Duration
 	sendQueue    int
+	messageType  int
+	replayLatest bool
+	onConnect    func()
 
 	mu      sync.Mutex
 	clients map[*hubClient]struct{}
 	closed  bool
+	latest  []byte
+}
+
+// HubOption adjusts a Hub created by NewHub.
+type HubOption func(*Hub)
+
+// WithBinaryMessages sends messages as binary frames rather than text.
+func WithBinaryMessages() HubOption {
+	return func(h *Hub) { h.messageType = websocket.BinaryMessage }
+}
+
+// WithSendQueue sets how many messages may wait for one client. A queue of one
+// means a client that falls behind skips straight to the newest message.
+func WithSendQueue(size int) HubOption {
+	return func(h *Hub) {
+		if size > 0 {
+			h.sendQueue = size
+		}
+	}
+}
+
+// WithReplayLatest sends the most recent broadcast to each client as it
+// connects, so a display that changes rarely is not blank until it next does.
+func WithReplayLatest() HubOption {
+	return func(h *Hub) { h.replayLatest = true }
+}
+
+// WithOnConnect calls onConnect each time a client has been registered, so a
+// producer that stops while nobody is listening can start again at once. It
+// runs on the connecting client's goroutine and must not block.
+func WithOnConnect(onConnect func()) HubOption {
+	return func(h *Hub) { h.onConnect = onConnect }
 }
 
 // hubClient is one connection and its pending messages.
@@ -50,15 +85,20 @@ type hubClient struct {
 	closeOnce sync.Once
 }
 
-// NewHub returns a hub using the default timeouts.
-func NewHub() *Hub {
-	return &Hub{
+// NewHub returns a hub using the default timeouts, sending text messages.
+func NewHub(options ...HubOption) *Hub {
+	h := &Hub{
 		writeTimeout: DefaultWriteTimeout,
 		pingInterval: DefaultPingInterval,
 		pongWait:     DefaultPongWait,
 		sendQueue:    DefaultSendQueue,
+		messageType:  websocket.TextMessage,
 		clients:      make(map[*hubClient]struct{}),
 	}
+	for _, option := range options {
+		option(h)
+	}
+	return h
 }
 
 // Serve registers an upgraded connection and blocks until the client goes away
@@ -78,9 +118,15 @@ func (h *Hub) Serve(conn *websocket.Conn) {
 		return
 	}
 	h.clients[client] = struct{}{}
+	if h.replayLatest && h.latest != nil {
+		client.enqueue(h.latest)
+	}
 	h.mu.Unlock()
 
 	go h.writeLoop(client)
+	if h.onConnect != nil {
+		h.onConnect()
+	}
 
 	defer func() {
 		h.mu.Lock()
@@ -117,7 +163,7 @@ func (h *Hub) writeLoop(client *hubClient) {
 			return
 		case message := <-client.send:
 			_ = client.conn.SetWriteDeadline(time.Now().Add(h.writeTimeout))
-			if err := client.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			if err := client.conn.WriteMessage(h.messageType, message); err != nil {
 				client.close()
 				return
 			}
@@ -132,10 +178,14 @@ func (h *Hub) writeLoop(client *hubClient) {
 }
 
 // Broadcast queues message for every client without waiting on any of them.
+// The hub keeps a reference to message, so the caller must not modify it.
 func (h *Hub) Broadcast(message []byte) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
+	if h.replayLatest {
+		h.latest = message
+	}
 	for client := range h.clients {
 		client.enqueue(message)
 	}

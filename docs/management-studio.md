@@ -25,19 +25,28 @@ To leave the Studio out of `serve` or `run`, pass `--management=false`.
 The Studio opens on the configured theme when it is a native one, and otherwise
 on the first installed native theme. Web-only themes are not listed.
 
-### Without a USB panel
+### On a phone or tablet
 
-`serve` shows the web version of a theme, from its built `dist/` directory.
-The Studio edits the native version in `native.theme.json`, which is a separate
-design drawn by the Go renderer. So with `serve`:
+`serve` draws a theme's native version on the PC and streams it to the browser
+on the phone or tablet, unless you pass `--renderer web` or the native version
+fails to load. In that native mode:
 
-- **Native preview** shows your edits exactly as the Go renderer draws them.
-- **Apply to panel** validates and saves the theme. There is no panel to
-  reload, so nothing else changes.
-- The phone or tablet keeps showing the web version and does not see the edits.
+- **Apply to panel** validates and saves the theme, then redraws it on every
+  connected screen within a frame. The page on the phone does not reload.
+- If the saved theme fails to load, for example because an asset is missing,
+  Apply reports the error, the previous file is restored, and the screens keep
+  showing the working version.
+- Applying a theme other than the one `serve` shows only saves it.
 
-Panel settings such as brightness and orientation are saved but have no effect
-without a panel.
+When `serve` shows the web version instead (its built `dist/`), the Studio's
+edits do not reach the screen, because the web version is a separate design.
+The banner says which one is showing: `Serving theme: caelestia (native)`.
+
+The standalone Studio from `sensorview ui` has no screen attached, so there
+Apply only saves.
+
+Reloading starts the history charts afresh, and panel settings such as
+brightness and orientation are saved but have no effect without a USB panel.
 
 The persistent settings are:
 

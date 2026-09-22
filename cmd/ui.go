@@ -85,7 +85,13 @@ func runStandaloneStudio(cfg *config.Config, address string) error {
 	collector := sensors.NewCollector(&sensors.Config{Options: cfg.SensorOptions})
 	collector.CollectAll()
 
-	manager, err := startStudio(address, collector, cfg.Theme, studioModeStandalone)
+	manager, err := startStudio(studioOptions{
+		address:        address,
+		collector:      collector,
+		preferredTheme: cfg.Theme,
+		mode:           studioModeStandalone,
+		renderer:       "none",
+	})
 	if err != nil {
 		return fmt.Errorf("start Management Studio on %s: %w", address, err)
 	}

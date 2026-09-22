@@ -38,6 +38,11 @@ type Options struct {
 	// DistDir is the built theme directory, as produced by theme build.
 	DistDir string
 
+	// NativeThemeDir, when set, is a theme directory holding native.theme.json.
+	// The theme is then drawn here by the native Go renderer and streamed to a
+	// viewer page as JPEG frames, and DistDir is not used.
+	NativeThemeDir string
+
 	// Address is the host:port to listen on. Defaults to DefaultAddress.
 	Address string
 
@@ -63,6 +68,11 @@ type Server struct {
 	options   Options
 	collector *sensors.Collector
 
+	// native renders a native theme; nil for a web theme. It is loaded in New,
+	// so a theme that cannot render fails there, and owned by Run afterwards.
+	native  *nativeRuntime
+	reloads chan chan error
+
 	mu   sync.Mutex
 	http *server.Server
 }
@@ -76,22 +86,64 @@ func New(options Options) (*Server, error) {
 		options.Interval = DefaultInterval
 	}
 
+	s := &Server{
+		options: options,
+		collector: sensors.NewCollector(&sensors.Config{
+			Options: options.SensorOptions,
+		}),
+		reloads: make(chan chan error),
+	}
+
+	if options.NativeThemeDir != "" {
+		runtime, err := loadNativeRuntime(options.NativeThemeDir, options.Interval)
+		if err != nil {
+			return nil, err
+		}
+		s.native = runtime
+		return s, nil
+	}
+
 	// Checked up front so the error names the fix rather than serving 404s.
 	index := filepath.Join(options.DistDir, "index.html")
 	if _, err := os.Stat(index); err != nil {
 		return nil, fmt.Errorf("%w: no index.html in %s, run theme build first", errNoTheme, options.DistDir)
 	}
+	return s, nil
+}
 
-	return &Server{
-		options: options,
-		collector: sensors.NewCollector(&sensors.Config{
-			Options: options.SensorOptions,
-		}),
-	}, nil
+// Native reports whether the server draws a native theme rather than serving a
+// web one.
+func (s *Server) Native() bool {
+	return s.options.NativeThemeDir != ""
+}
+
+// reloadTimeout bounds how long Reload waits for the render loop to take the
+// request, which it does between frames.
+var reloadTimeout = 10 * time.Second
+
+// Reload re-reads a native theme from disk and shows it on every connected
+// display, keeping the current one if the new version fails to load. It does
+// nothing for a web theme, whose built files are served as they are.
+func (s *Server) Reload() error {
+	if !s.Native() {
+		return nil
+	}
+
+	result := make(chan error, 1)
+	select {
+	case s.reloads <- result:
+	case <-time.After(reloadTimeout):
+		return fmt.Errorf("display is not running")
+	}
+	return <-result
 }
 
 // Run serves until the context is cancelled.
 func (s *Server) Run(ctx context.Context) error {
+	if s.Native() {
+		return s.runNative(ctx)
+	}
+
 	httpServer := server.NewWithAddress(s.options.DistDir, s.options.Address)
 	if err := httpServer.Start(); err != nil {
 		return fmt.Errorf("listen on %s: %w", s.options.Address, err)

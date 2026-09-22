@@ -225,3 +225,84 @@ func TestServerCanRestartAfterStop(t *testing.T) {
 		t.Errorf("read after restart: %v", err)
 	}
 }
+
+func TestBinaryHubSendsBinaryFrames(t *testing.T) {
+	hub := NewHub(WithBinaryMessages())
+	url := startHub(t, hub)
+	conn := dialHub(t, hub, url)
+
+	hub.Broadcast([]byte{0xff, 0xd8})
+
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second))
+	kind, message, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if kind != websocket.BinaryMessage || !bytes.Equal(message, []byte{0xff, 0xd8}) {
+		t.Errorf("got type %d %v, want a binary ff d8", kind, message)
+	}
+}
+
+// A display that has not changed since before a client connected must still
+// show something to that client straight away.
+func TestReplayLatestSendsTheLastBroadcastOnConnect(t *testing.T) {
+	hub := NewHub(WithReplayLatest())
+	url := startHub(t, hub)
+
+	hub.Broadcast([]byte("old"))
+	hub.Broadcast([]byte("current"))
+	conn := dialHub(t, hub, url)
+
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second))
+	_, message, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if string(message) != "current" {
+		t.Errorf("first message = %q, want the latest broadcast", message)
+	}
+}
+
+func TestHubWithoutReplaySendsNothingOnConnect(t *testing.T) {
+	hub := NewHub()
+	url := startHub(t, hub)
+
+	hub.Broadcast([]byte("before"))
+	conn := dialHub(t, hub, url)
+
+	_ = conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if _, message, err := conn.ReadMessage(); err == nil {
+		t.Errorf("received %q, want nothing from before the client connected", message)
+	}
+}
+
+func TestSendQueueOfOneKeepsOnlyTheNewestMessage(t *testing.T) {
+	hub := NewHub(WithSendQueue(1))
+	client := &hubClient{send: make(chan []byte, hub.sendQueue)}
+
+	for _, message := range []string{"a", "b", "c"} {
+		client.enqueue([]byte(message))
+	}
+
+	if got := string(<-client.send); got != "c" || len(client.send) != 0 {
+		t.Errorf("queued %q with %d left, want only c", got, len(client.send))
+	}
+}
+
+func TestOnConnectRunsAfterTheClientIsRegistered(t *testing.T) {
+	var hub *Hub
+	counts := make(chan int, 1)
+	hub = NewHub(WithOnConnect(func() { counts <- hub.Len() }))
+	url := startHub(t, hub)
+
+	dialHub(t, hub, url)
+
+	select {
+	case count := <-counts:
+		if count != 1 {
+			t.Errorf("clients when onConnect ran = %d, want 1 so a broadcast reaches the new client", count)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("onConnect was not called")
+	}
+}

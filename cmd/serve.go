@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -22,16 +23,24 @@ var (
 	serveOpts           []string
 	serveManagement     bool
 	serveManagementAddr string
+	serveRenderer       string
 )
 
 var serveCmd = &cobra.Command{
 	Use:   "serve [name]",
-	Short: "Serve a built theme over HTTP with live sensor data",
-	Long: `Serve a built theme so any browser can act as the panel.
+	Short: "Serve a theme over HTTP so any browser can be the panel",
+	Long: `Serve a theme so any browser can act as the panel.
 
-This needs no USB device, no Node toolchain and no headless browser: it serves
-the theme's dist/ directory and streams sensor readings over a WebSocket on the
-same port. Build the theme first with 'sensorview theme build <name>'.
+This needs no USB device, no Node toolchain and no headless browser. A theme can
+be shown two ways, chosen with --renderer:
+
+  native  The native Go renderer draws native.theme.json here and streams the
+          frames to a viewer page. This is the version the Management Studio
+          edits, and applying it there updates every open screen.
+  web     The theme's built dist/ directory is served, with sensor readings on
+          a WebSocket on the same port. Build it first with
+          'sensorview theme build <name>'.
+  auto    native when the theme has one and it loads, otherwise web (default).
 
 By default it listens on loopback only. To use a phone or tablet as the panel,
 bind every interface:
@@ -65,17 +74,22 @@ to leave it out.`,
 			return err
 		}
 
+		renderers, err := serveRendererOrder(serveRenderer, t.HasNative)
+		if err != nil {
+			return fmt.Errorf("theme '%s': %w", themeName, err)
+		}
+
 		// Set before Run, which is what calls OnReady.
 		studioURL := ""
-		srv, err := display.New(display.Options{
-			DistDir:       t.DistDir(),
+		options := display.Options{
 			Address:       serveAddr,
 			Interval:      time.Duration(serveInterval * float64(time.Second)),
 			SensorOptions: sensorOptions,
 			OnReady: func(ready *display.Server) {
 				printServeBanner(themeName, ready, studioURL)
 			},
-		})
+		}
+		srv, err := newServeDisplay(options, t, renderers)
 		if err != nil {
 			return err
 		}
@@ -85,9 +99,28 @@ to leave it out.`,
 			serveManagement, cmd.Flags().Changed("management"),
 			serveManagementAddr, cmd.Flags().Changed("management-address"))
 		if enabled {
+			renderer := serveRendererWeb
+			if srv.Native() {
+				renderer = serveRendererNative
+			}
 			// A Studio that cannot start, typically because run or another serve
 			// already holds the port, is not a reason to stop serving the panel.
-			manager, err := startStudio(address, srv.Collector(), themeName, studioModeServe)
+			manager, err := startStudio(studioOptions{
+				address:        address,
+				collector:      srv.Collector(),
+				preferredTheme: themeName,
+				mode:           studioModeServe,
+				renderer:       renderer,
+				// Applying the theme on display redraws every connected screen;
+				// any other theme is only saved. A failed reload makes the Studio
+				// restore the previous file.
+				applyTheme: func(name string) error {
+					if name != themeName {
+						return nil
+					}
+					return srv.Reload()
+				},
+			})
 			if err != nil {
 				fmt.Printf("[serve] Warning: Management Studio unavailable: %v\n", err)
 			} else {
@@ -109,6 +142,61 @@ to leave it out.`,
 
 		return srv.Run(ctx)
 	},
+}
+
+// Renderers serve can use.
+const (
+	serveRendererAuto   = "auto"
+	serveRendererNative = "native"
+	serveRendererWeb    = "web"
+)
+
+// serveRendererOrder returns the renderers to try, in order. auto prefers the
+// native version of a theme, as run does, because that is the one the
+// Management Studio edits; the web version is the fallback.
+func serveRendererOrder(requested string, hasNative bool) ([]string, error) {
+	switch requested {
+	case serveRendererAuto, "":
+		if hasNative {
+			return []string{serveRendererNative, serveRendererWeb}, nil
+		}
+		return []string{serveRendererWeb}, nil
+	case serveRendererNative:
+		if !hasNative {
+			return nil, fmt.Errorf("no native.theme.json; use --renderer web")
+		}
+		return []string{serveRendererNative}, nil
+	case serveRendererWeb:
+		return []string{serveRendererWeb}, nil
+	default:
+		return nil, fmt.Errorf("invalid renderer %q (expected auto, native, or web)", requested)
+	}
+}
+
+// newServeDisplay prepares a display with the first renderer that works. A
+// native theme that cannot load, for example because its background video was
+// never extracted, falls back to the web version when there is one.
+func newServeDisplay(options display.Options, t *theme.Theme, renderers []string) (*display.Server, error) {
+	var failures []error
+	for i, renderer := range renderers {
+		attempt := options
+		if renderer == serveRendererNative {
+			attempt.NativeThemeDir = t.Path
+		} else {
+			attempt.DistDir = t.DistDir()
+		}
+
+		srv, err := display.New(attempt)
+		if err == nil {
+			return srv, nil
+		}
+		failures = append(failures, fmt.Errorf("%s: %w", renderer, err))
+		if i+1 < len(renderers) {
+			fmt.Printf("[serve] The %s version of '%s' cannot be shown (%v); trying the %s version\n",
+				renderer, t.Name, err, renderers[i+1])
+		}
+	}
+	return nil, fmt.Errorf("theme '%s': %w", t.Name, errors.Join(failures...))
 }
 
 // resolveServeTheme picks the theme named on the command line, or the selected
@@ -161,7 +249,11 @@ func serveSensorOptions() (map[string]interface{}, error) {
 
 // printServeBanner reports where the panel can be opened.
 func printServeBanner(themeName string, srv *display.Server, studioURL string) {
-	fmt.Printf("Serving theme: %s\n", themeName)
+	renderer := serveRendererWeb
+	if srv.Native() {
+		renderer = serveRendererNative
+	}
+	fmt.Printf("Serving theme: %s (%s)\n", themeName, renderer)
 	if local := srv.LocalURL(); local != "" {
 		fmt.Printf("[serve] Local:     %s\n", local)
 	}
@@ -186,6 +278,7 @@ func init() {
 	serveCmd.Flags().StringVar(&serveAddr, "addr", display.DefaultAddress, "Address to listen on (use 0.0.0.0:19847 to allow other devices)")
 	serveCmd.Flags().Float64VarP(&serveInterval, "interval", "i", 1.0, "Sensor update interval in seconds")
 	serveCmd.Flags().StringSliceVarP(&serveOpts, "opt", "o", nil, "Sensor options in key=value format (e.g., lhm.url=http://localhost:8085/data.json)")
+	serveCmd.Flags().StringVar(&serveRenderer, "renderer", serveRendererAuto, "How to draw the theme: auto, native, or web")
 	serveCmd.Flags().BoolVar(&serveManagement, "management", true, "Serve the local Management Studio")
 	serveCmd.Flags().StringVar(&serveManagementAddr, "management-address", "", "Management Studio address (localhost only; default "+defaultStudioAddress+")")
 

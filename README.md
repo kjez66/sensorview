@@ -146,10 +146,10 @@ nix build
 
 ### 2. Put it on your tablet or phone
 
-Build a theme, then serve it on every interface so other devices can reach it:
+Serve a theme on every interface so other devices can reach it:
 
 ```bash
-./sensorview theme build trofeo
+./sensorview theme build trofeo      # only needed for the web version of a theme
 ./sensorview serve trofeo --addr 0.0.0.0:19847
 ```
 
@@ -157,7 +157,7 @@ Each reachable address is printed with the adapter it belongs to, which matters
 on a machine with VPN or virtual-switch adapters:
 
 ```
-Serving theme: trofeo
+Serving theme: trofeo (web)
 [serve] Local:     http://localhost:19847/?ws=19847
 [serve] Phone/LAN: http://192.168.1.50:19847/?ws=19847  (Ethernet)
 ```
@@ -165,6 +165,11 @@ Serving theme: trofeo
 Open the `Phone/LAN` address in the browser on your tablet, add it to the home
 screen for a full-screen view, and you are done. On Windows the first run may
 need an inbound firewall rule for the port.
+
+A theme with a `native.theme.json` is drawn on the PC and streamed to the
+browser, so edits made in the [Management Studio](#management-studio) show up
+on the screen as soon as you apply them. See
+[Native or web](#native-or-web) for how `serve` chooses.
 
 > **The sensor feed has no authentication.** Anyone who can reach that port can
 > read your system metrics. The default (`127.0.0.1:19847`) binds loopback only;
@@ -286,14 +291,14 @@ renderer.
 ### Serve a Theme to a Browser
 
 Turns any browser into the panel. No USB display, no Node toolchain and no
-headless Chrome: the built theme and its sensor WebSocket are served from one
-port.
+headless Chrome: everything is served from one port.
 
 ```bash
 sensorview serve [name] [flags]
 
 Flags:
       --addr string        Address to listen on (default 127.0.0.1:19847)
+      --renderer string    How to draw the theme: auto, native, or web (default auto)
   -i, --interval float     Sensor update interval in seconds (default 1.0)
   -o, --opt strings        Sensor options (e.g., lhm.url=http://localhost:8085/data.json)
       --management         Serve the local Management Studio (default true)
@@ -301,10 +306,35 @@ Flags:
                            Studio address (localhost only; default 127.0.0.1:19848)
 ```
 
-Build the theme first, then serve it:
+#### Native or web
+
+A theme can come in two versions, and `serve` shows one of them:
+
+| | Native | Web |
+|---|---|---|
+| Defined by | `native.theme.json` | a React app, built into `dist/` |
+| Drawn by | the Go renderer on the PC, streamed as JPEG frames | the browser |
+| Edited with | the [Management Studio](#management-studio) | code, with `theme dev` |
+| Needs a build | no | `sensorview theme build <name>` |
+
+`--renderer auto` (the default) uses the native version when the theme has one
+and it loads, and otherwise falls back to the web version, saying why:
+
+```
+[serve] The native version of 'trofeo' cannot be shown (load native background: ... has no frames); trying the web version
+Serving theme: trofeo (web)
+```
+
+Pass `--renderer native` or `--renderer web` to insist on one.
+
+The native viewer scales the frame to fit the screen. A tall design is turned
+a quarter when that shows it larger, which suits a tablet lying in landscape;
+add `?rotate=0`, `90`, `180` or `270` to the address to fix the rotation
+instead. Tap the screen to go full screen. Rendering pauses while no screen is
+connected.
 
 ```bash
-sensorview theme build trofeo
+sensorview theme build trofeo    # only for the web version
 sensorview serve trofeo
 ```
 
@@ -343,12 +373,12 @@ sensorview serve trofeo       # Also starts the Studio; its address is printed o
 `serve` starts the Studio unless you pass `--management=false`. With a USB
 panel (`-tags usb`), `sensorview run --renderer native` starts it too.
 
-> **Native themes do not reach the phone yet.** The Studio edits native themes
-> (`native.theme.json`), which the Go renderer draws. `serve` shows the web
-> version of a theme (its built `dist/`), which is a separate design. So edits
-> made in the Studio appear in its **Native preview** and on a USB panel, but
-> not on a phone or tablet. Without a USB panel, **Apply to panel** saves the
-> theme and nothing more.
+**Apply to panel** saves the theme and redraws every screen showing it: the
+phones and tablets connected to `serve` when it shows that theme's native
+version, or the USB panel under `run`. A theme that fails to load is not saved,
+and the screens keep the version they had. When `serve` shows the web version
+of a theme, the Studio's edits do not reach it, because the web version is a
+separate design; see [Native or web](#native-or-web).
 
 The Studio provides a fixed-pixel free canvas, live sensor bindings, bars,
 gauges and history charts, static image/image-widget support, custom fonts,

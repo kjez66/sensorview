@@ -29,6 +29,9 @@ type Server struct {
 	// fresh one, because Stop closes it for good.
 	hub *Hub
 
+	// handler, when set, replaces the theme file server and /ws endpoint.
+	handler http.Handler
+
 	upgrader websocket.Upgrader
 }
 
@@ -53,6 +56,15 @@ func NewWithAddress(distDir, addr string) *Server {
 	}
 }
 
+// NewWithHandler creates a server bound to addr that serves handler instead of
+// a theme directory. BroadcastSensorData then reaches nobody; the handler owns
+// whatever it streams.
+func NewWithHandler(addr string, handler http.Handler) *Server {
+	s := NewWithAddress("", addr)
+	s.handler = handler
+	return s
+}
+
 // Start starts the server on its configured address.
 func (s *Server) Start() error {
 	s.mu.Lock()
@@ -71,19 +83,23 @@ func (s *Server) Start() error {
 	hub := NewHub()
 	s.hub = hub
 
-	mux := http.NewServeMux()
+	handler := s.handler
+	if handler == nil {
+		mux := http.NewServeMux()
 
-	// Serve static files from dist directory
-	fs := http.FileServer(http.Dir(s.distDir))
-	mux.Handle("/", fs)
+		// Serve static files from dist directory
+		fs := http.FileServer(http.Dir(s.distDir))
+		mux.Handle("/", fs)
 
-	// WebSocket endpoint for sensor data
-	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		s.handleWebSocket(w, r, hub)
-	})
+		// WebSocket endpoint for sensor data
+		mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+			s.handleWebSocket(w, r, hub)
+		})
+		handler = mux
+	}
 
 	s.server = &http.Server{
-		Handler: mux,
+		Handler: handler,
 	}
 
 	go s.server.Serve(s.listener)

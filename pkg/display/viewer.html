@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#000000" />
+    <title>SensorView</title>
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+      #frame {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform-origin: center center;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #status {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        display: none;
+        font: 13px system-ui, sans-serif;
+        color: #9a9a9a;
+      }
+      body.offline #status { display: block; }
+    </style>
+  </head>
+  <body class="offline">
+    <img id="frame" alt="" />
+    <div id="status" role="status">Connecting…</div>
+    <script>
+      (function () {
+        var img = document.getElementById("frame");
+        var status = document.getElementById("status");
+
+        // ?rotate=0|90|180|270 fixes the rotation. Otherwise the frame is turned
+        // a quarter whenever that shows it larger, so a tall panel design fills
+        // a landscape tablet instead of sitting in a thin column.
+        var fixed = new URLSearchParams(location.search).get("rotate");
+        if (["0", "90", "180", "270"].indexOf(fixed) < 0) fixed = null;
+
+        function fit() {
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if (!w || !h) return;
+          var vw = window.innerWidth, vh = window.innerHeight;
+          var upright = Math.min(vw / w, vh / h);
+          var turned = Math.min(vw / h, vh / w);
+          var rotation = fixed !== null ? Number(fixed) : (turned > upright ? 90 : 0);
+          var scale = rotation % 180 === 0 ? upright : turned;
+          img.style.width = w + "px";
+          img.style.height = h + "px";
+          img.style.transform = "translate(-50%, -50%) rotate(" + rotation + "deg) scale(" + scale + ")";
+        }
+
+        // Frames can arrive faster than a slow phone decodes them. Only the
+        // newest waiting frame is kept, so the display never falls behind.
+        var shown = null, decoding = false, waiting = null;
+        function show(blob) {
+          if (decoding) { waiting = blob; return; }
+          decoding = true;
+          var url = URL.createObjectURL(blob);
+          function done(ok) {
+            if (ok) {
+              if (shown) URL.revokeObjectURL(shown);
+              shown = url;
+              fit();
+            } else {
+              URL.revokeObjectURL(url);
+            }
+            decoding = false;
+            if (waiting) { var next = waiting; waiting = null; show(next); }
+          }
+          img.onload = function () { done(true); };
+          img.onerror = function () { done(false); };
+          img.src = url;
+        }
+
+        var retryDelay = 1000;
+        function connect() {
+          var scheme = location.protocol === "https:" ? "wss:" : "ws:";
+          var socket = new WebSocket(scheme + "//" + location.host + "/frames");
+          socket.binaryType = "blob";
+          socket.onopen = function () {
+            retryDelay = 1000;
+            document.body.classList.remove("offline");
+          };
+          socket.onmessage = function (event) { show(event.data); };
+          socket.onclose = function () {
+            status.textContent = "Reconnecting…";
+            document.body.classList.add("offline");
+            setTimeout(connect, retryDelay);
+            retryDelay = Math.min(retryDelay * 2, 10000);
+          };
+          socket.onerror = function () { socket.close(); };
+        }
+
+        window.addEventListener("resize", fit);
+        window.addEventListener("orientationchange", fit);
+        // A tap goes full screen where the browser allows it.
+        document.addEventListener("click", function () {
+          var root = document.documentElement;
+          if (!document.fullscreenElement && root.requestFullscreen) {
+            root.requestFullscreen().catch(function () {});
+          }
+        });
+        connect();
+      })();
+    </script>
+  </body>
+</html>
